@@ -54,7 +54,8 @@ Use the installed Superpowers skills as techniques (brainstorming, writing-plans
 - Bug fix: failing test first, then the fix. Never weaken, skip or delete a test to get green.
 - Same failing check: max 3 fix attempts, then stop and explain. Auditor findings: max 2 fix rounds, then report UNVERIFIED.
 
-## Memory — ADR-0004 (proposed; pending the owner's interview)
+## Memory — ADR-0004 (accepted 2026-10-06; hooks not built yet)
+- Compaction at 65% (650k tokens). The repo is an Obsidian vault: use standard relative Markdown links. Search = grep until the QMD trigger in ADR-0004.
 - Markdown in git is the source of truth for memory; any search or graph index is derived and rebuildable.
 - Session start: read memory/now.md (hot state, ≤120 lines) and docs/sdlc-state.md.
 - Session end: run /sdlc-wrap.

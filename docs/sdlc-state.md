@@ -17,7 +17,8 @@
 | 9 | Observe | not-started | log schema, telemetry, control bands | — |
 
 ## Current focus (მიმდინარე ფოკუსი)
-ძრავა v0: დირექტორია შექმნილია; შემდეგია ინტერვიუ კონტექსტსა და მეხსიერებაზე (ADR-0004).
+ძრავა v0: დირექტორია შექმნილია, მეხსიერების ინტერვიუ ჩატარდა (ADR-0004 `accepted`). შემდეგია მფლობელის პრინციპები და harness v0.
 
 ## Gate log (კარიბჭეების ჟურნალი)
 - 2026-10-06 — Engine scaffold created on branch `engine/v0-scaffold`. Not approved yet.
+- 2026-10-06 — ADR-0004 (context & memory) accepted by the owner through the interview: 65% · Obsidian vault · grep → QMD at trigger · ADR + git + wrap check.

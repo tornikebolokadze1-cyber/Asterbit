@@ -8,7 +8,7 @@
 - [x] Evaluate the awesome-ai-pulse-georgia collection → sdlc/research/engine-selection.md
 - [x] Verify harness facts in the Claude Code docs (bundled v2.1.289): compaction window, PreCompact/PostCompact, advisor, effort, subagent and skill front matter
 - [x] Create the directory: CLAUDE.md, README.md, phase skills, subagents, templates, design docs, ADR-0001…0004
-- [ ] Memory & context interview → ADR-0004 accepted
+- [x] Memory & context interview → ADR-0004 accepted (2026-10-06: 65% · Obsidian vault · grep → QMD at trigger · ADR + git + wrap check)
 - [ ] Owner writes the handoff / session-summary principles → memory/README.md
 - [ ] Owner reviews the scaffold → ADR-0001…0003 accepted → merge `engine/v0-scaffold` into `main`
 - [ ] Harness v0: .claude/settings.json (models, effort, advisor, compaction window, permissions baseline) + memory hooks (PostCompact → memory/, SessionStart → now.md + handoff)
