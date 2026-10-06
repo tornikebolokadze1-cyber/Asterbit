@@ -6,3 +6,4 @@
 
 | Date | What went wrong | Rule | Check that guards it | In CLAUDE.md? |
 |---|---|---|---|---|
+| 2026-10-06 | Multi-phase work (research → scaffold → interview) ran without PROGRESS.md, although the owner's global CLAUDE.md requires it, and there was no PROCESS.md either — the owner had to point it out | Create PROGRESS.md at the start of any multi-phase work and append after every phase; keep the working agreement in PROCESS.md | None yet — an existence check for both files is planned with the harness v0 structure gate | Yes — project CLAUDE.md now requires PROGRESS.md entries |

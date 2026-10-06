@@ -1,6 +1,6 @@
 # Asterbit — AI-native SDLC engine
 
-This repo holds (1) a phase-gated SDLC engine for building software with Claude Code and (2), later, the product built with it. The product is not chosen yet — Phase 1 decides it. Owner's guide (Georgian): README.md.
+This repo holds (1) a phase-gated SDLC engine for building software with Claude Code and (2), later, the product built with it. The product is not chosen yet — Phase 1 decides it. Owner's guide (Georgian): README.md. Working agreement (Georgian): PROCESS.md — it must say the same as this file; report any mismatch as a defect. Work log: PROGRESS.md.
 
 ## Owner
 - Writes Georgian, does not read code, learns by building. Answer in Georgian prose; keep technical terms but gloss each on first use; explain what and why before how.
@@ -24,9 +24,10 @@ After release, every finding, bug or new idea becomes a new intent in docs/chang
 
 Gate rules:
 - Read docs/sdlc-state.md before any phase work. Do not start phase N+1 until phase N is `approved`.
-- No product code (anything outside docs/, tasks/, memory/, sdlc/, .claude/, CLAUDE.md, README.md, .gitignore) before docs/plan.md is approved.
+- No product code (anything outside docs/, tasks/, memory/, sdlc/, .claude/, .obsidian/ and the root files README.md, CLAUDE.md, PROCESS.md, PROGRESS.md, .gitignore) before docs/plan.md is approved.
 - Before asking for approval, run the `auditor` subagent on the artifact and show its verdict.
 - Approval = the owner's explicit words. Record who and when in docs/sdlc-state.md, then commit.
+- After every phase, gate or milestone, append a dated entry to PROGRESS.md and refresh its Current State / In Progress / Next Steps. Never rewrite old entries.
 
 ## Artifacts
 - Copy templates from sdlc/templates/; never edit a template in place.
@@ -57,7 +58,7 @@ Use the installed Superpowers skills as techniques (brainstorming, writing-plans
 ## Memory — ADR-0004 (accepted 2026-10-06; hooks not built yet)
 - Compaction at 65% (650k tokens). The repo is an Obsidian vault: use standard relative Markdown links. Search = grep until the QMD trigger in ADR-0004.
 - Markdown in git is the source of truth for memory; any search or graph index is derived and rebuildable.
-- Session start: read memory/now.md (hot state, ≤120 lines) and docs/sdlc-state.md.
+- Session start: read memory/now.md (hot state, ≤120 lines), docs/sdlc-state.md and PROGRESS.md (Current State, Next Steps).
 - Session end: run /sdlc-wrap.
 - Corrected twice → the rule goes into this file; log every correction in tasks/lessons.md.
 - Never write secrets, tokens, other people's personal data, or verbatim untrusted text (web pages, fetched files) into memory/ — it would reload every session.

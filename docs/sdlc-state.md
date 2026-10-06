@@ -5,7 +5,7 @@
 
 | # | Phase | Status | Artifact | Approved by / date |
 |---|---|---|---|---|
-| 0 | Engine setup | in-progress | sdlc/, .claude/, CLAUDE.md, docs/decisions/0001–0004 | — |
+| 0 | Engine setup | in-progress | sdlc/, .claude/, CLAUDE.md, PROCESS.md, PROGRESS.md, docs/decisions/0001–0004 | — |
 | 1 | Intent | not-started | docs/intent.md | — |
 | 2 | Architecture | not-started | docs/decisions/ | — |
 | 3 | Harness | not-started | .claude/settings.json, .claude/hooks/, ADR | — |
