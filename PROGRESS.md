@@ -5,7 +5,7 @@
 
 ## Current State (მიმდინარე მდგომარეობა)
 - **Phase:** 0 — Engine setup — IN PROGRESS (scaffold მზადაა და შენს დამტკიცებას ელოდება)
-- **Branch:** `engine/v0-scaffold` (`main`-ში ჯერ არ გაერთიანებულა)
+- **Branch:** `engine/v0-scaffold` (`main`-ში ჯერ არ გაერთიანებულა) · **GitHub:** private repo `tornikebolokadze1-cyber/Asterbit`, PR #1 განსახილველად
 - **Decisions:** ADR-0004 accepted; ADR-0001…0003 proposed
 - **Checks:** სტრუქტურული შემოწმება 92/92 გადის; drill-მა ჩადებული 3 შეცდომიდან 3 დაიჭირა; Claude Code-მა 11-ივე `sdlc-*` ბრძანება აღმოაჩინა
 - **Not built yet:** `.claude/settings.json`, მეხსიერების hook-ები
@@ -32,7 +32,14 @@
 - CLAUDE.md-ში დაემატა წესი: PROGRESS.md ყოველი ეტაპის, კარიბჭისა და milestone-ის ბოლოს ივსება; `/sdlc-wrap`-ს შესაბამისი ნაბიჯი დაემატა
 - გაკვეთილი ჩაიწერა `tasks/lessons.md`-ში: ეს ფაილები თავიდანვე უნდა შექმნილიყო
 
+### 2026-10-06 — Phase 0.5: GitHub
+- `git add -A`-მა plugin-ის დროებითი ფაილი (`.omc/state/idle-notif-cooldown.json`) commit-ში შეიტანა; თვალყურის დევნება შეწყდა, `.omc/` → .gitignore, გაკვეთილი ჩაიწერა — commit `5e41fad`
+- საიდუმლოებების შემოწმება ატვირთვამდე: gitleaks (მთელი git ისტორია) და scan_secrets.py — exit 0; ორივემ ჩადებული ყალბი გასაღები დაიჭირა — exit 1
+- შეიქმნა private რეპო https://github.com/tornikebolokadze1-cyber/Asterbit; აიტვირთა `main` და `engine/v0-scaffold`; GitHub-ზე 49 ფაილია
+- გაიხსნა PR #1 (`engine/v0-scaffold` → `main`): მისი merge = ძრავის v0-ის დამტკიცება
+
 ## In Progress (მიმდინარე)
+- l.vamleti@asterbit.io-ს მოწვევა რეპოში — საჭიროა მისი GitHub username (ელფოსტით ანგარიში საჯაროდ არ იძებნება)
 - შენი პრინციპები handoff-ისა და შეჯამებისთვის → `memory/README.md`
 - scaffold-ის განხილვა → ADR-0001…0003-ისა და PROCESS.md-ის დამტკიცება → `main`-ში გაერთიანება
 
