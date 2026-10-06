@@ -1,0 +1,35 @@
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Secrets — never commit (security.md §4.2)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+credentials.json
+serviceAccountKey.json
+secrets/
+
+# Claude Code — local-only files
+.claude/settings.local.json
+.claude/agent-memory-local/
+# Raw handoffs written by the GLOBAL PreCompact/PostCompact hook (~/.claude/hooks/active/precompact-wrap.sh).
+# The engine consolidates them into memory/ (ADR-0004), so the raw copies stay out of git.
+.claude/handoff-*.md
+
+# Obsidian — per-device UI state (vault content itself IS committed)
+.obsidian/workspace*.json
+.obsidian/cache
+
+# Whatever the product turns out to be
+__pycache__/
+.venv/
+node_modules/
+dist/
+build/
