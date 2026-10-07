@@ -12,7 +12,7 @@ This repo holds (1) a phase-gated SDLC engine for building software with Claude 
 |---|---|---|---|
 | 0 | Engine setup | sdlc/, .claude/, CLAUDE.md | — |
 | 1 | Intent | docs/intent.md | /sdlc-intent |
-| 2 | Architecture | docs/decisions/NNNN-*.md | /sdlc-architecture |
+| 2 | Architecture | docs/prd.md, docs/decisions/NNNN-*.md, docs/trd.md | /sdlc-architecture |
 | 3 | Harness | .claude/settings.json, .claude/hooks/, ADR | /sdlc-harness |
 | 4 | Spec | docs/spec.md | /sdlc-spec |
 | 5 | Plan | docs/plan.md, tasks/todo.md | /sdlc-plan |
@@ -33,7 +33,7 @@ Gate rules:
 ## Artifacts
 - Copy templates from sdlc/templates/; never edit a template in place.
 - Headings stay in English (checks parse them; Georgian gloss in parentheses); content is written in Georgian.
-- Unknowns go to "Open questions" — never invent an answer to fill a section.
+- Unknowns go to "Open questions" — never invent an answer to fill a section. Inside PRD, TRD and spec mark them `[NEEDS CLARIFICATION: …]`; an approved artifact has none (check_structure.py enforces it).
 
 ## Decisions (ADRs)
 - Every stack/tool/library/hosting/model choice → ADR in docs/decisions/ (template sdlc/templates/adr.md) + update docs/decisions/README.md.
@@ -45,7 +45,7 @@ Gate rules:
 - Coder: main session, Sonnet 5.5, effort high.
 - Advisor: Opus 5.5 via the advisor tool — consult before committing to an approach, when an error repeats, and before declaring done. Name the advisor's verdict in your reply; a missing verdict is an audit finding.
 - `architect` subagent (Opus 5.5, high, read-only): option analysis for decisions.
-- `auditor` subagent (Opus 5.5, high, read-only): every gate and every milestone diff.
+- `auditor` subagent (Opus 5.5, high, read-only): every gate, every milestone diff and every `[high-risk]` task diff.
 - `verifier` subagent (Sonnet 5.5, medium): runs proofs in a fresh context, reports only.
 
 ## Methods
@@ -54,7 +54,8 @@ If the Superpowers plugin is installed (optional; see CONTRIBUTING.md), use its 
 ## Verification
 - "Done" means the check ran and its output is shown. No output, no claim. "Could not run" is inconclusive, never a pass.
 - Bug fix: failing test first, then the fix. Never weaken, skip or delete a test to get green.
-- Same failing check: max 3 fix attempts, then stop and explain. Auditor findings: max 2 fix rounds, then report UNVERIFIED.
+- Same failing check: max 3 fix attempts, then stop and explain.
+- Review loop (ADR-0006), at every milestone and every `[high-risk]` task: review → fix → review → fix → final review → the owner. Count rounds with `python3 sdlc/checks/review_rounds.py`, never from memory; LOW findings never use a round; stop early when HIGH+MEDIUM do not fall. Every changed line traces to the task.
 - Adding, moving or renaming a file: update docs/FILES.md in the same change.
 - After changing engine files run `python3 sdlc/checks/check_structure.py`; after changing a hook also run `python3 sdlc/checks/drill_hooks.py` (must say ARMED) and the same with `ASTERBIT_DRILL_STUB=1` (must say DEAD). CI runs all three on every pull request.
 

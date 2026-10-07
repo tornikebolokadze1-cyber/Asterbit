@@ -26,6 +26,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from drill_checks import drill_engine_checks  # check-script drills (ADR-0006); sibling module
+
 ROOT = Path(__file__).resolve().parents[2]
 HOOKS = ROOT / ".claude/hooks"
 STUB = os.environ.get("ASTERBIT_DRILL_STUB") == "1"
@@ -268,6 +270,7 @@ def main() -> int:
         drill_read_only_agents(drill, repo)
         drill_memory(drill, Path(tmp) / "project")
         drill_structure_check(drill, Path(tmp))
+        drill_engine_checks(drill, Path(tmp))
     return report(drill)
 
 

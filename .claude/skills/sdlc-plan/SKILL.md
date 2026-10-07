@@ -12,7 +12,7 @@ Gate: phase 4 `approved`, plus the evaluation design from `/sdlc-evaluate` if it
 ## Steps
 1. Draft docs/plan.md from sdlc/templates/plan.md: approach, milestones (each ends in something the owner can see or try), files that change, order of work, proof per milestone (command + expected output), gates in force, risks, alternatives not chosen.
 2. Interrogate the plan and write the answers into the Interrogation log: What could this break? Which step is riskiest, and why? What did we choose not to do? What would we cut if the time halved? Consult the advisor on the riskiest step.
-3. Break milestones into tasks in tasks/todo.md (template sdlc/templates/todo.md). Each task is small (one concern, roughly an hour of agent work) and carries its proof command. Tasks that touch disjoint files get `[parallel-ok]`.
+3. Break milestones into tasks in tasks/todo.md (template sdlc/templates/todo.md). Each task is small (one concern, roughly an hour of agent work) and carries its proof command. Tasks that touch disjoint files get `[parallel-ok]`. Tasks that touch authentication, payments, data deletion, security controls or an irreversible step get `[high-risk]` — the Sonnet↔Opus review loop then runs on that task alone (ADR-0006). Name each requirement ID (FR-n / NFR-n) in the task or milestone that delivers it: sdlc/checks/check_structure.py fails an approved plan that leaves one out.
 4. Run the `auditor` (gate: plan): coverage of the spec, a proof for every task, risk coverage.
 5. Explain the plan to the owner in plain Georgian — the milestones and what they will see after each one, not the file list.
 6. Owner approval → `status: approved`, phase 5 `approved` + a gate-log line, commit `docs(plan): approve`.
