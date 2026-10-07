@@ -55,7 +55,7 @@ If the Superpowers plugin is installed (optional; see CONTRIBUTING.md), use its 
 - "Done" means the check ran and its output is shown. No output, no claim. "Could not run" is inconclusive, never a pass.
 - Bug fix: failing test first, then the fix. Never weaken, skip or delete a test to get green.
 - Same failing check: max 3 fix attempts, then stop and explain.
-- Review loop (ADR-0006), at every milestone and every `[high-risk]` task: review → fix → review → fix → final review → the owner. Count rounds with `python3 sdlc/checks/review_rounds.py`, never from memory; LOW findings never use a round; stop early when HIGH+MEDIUM do not fall. Every changed line traces to the task.
+- Review loop — ADR-0006 (proposed): every auditor loop — gate audit, milestone, `[high-risk]` task or engine change — runs review → fix → review → fix → final review → the owner. The Sonnet↔Opus code review runs at every milestone and every `[high-risk]` task. Count rounds with `python3 sdlc/checks/review_rounds.py`, never from memory; reviews 2–3 cover only the fix; LOW findings never use a round; stop early when HIGH+MEDIUM do not fall. Every changed line traces to the task.
 - Adding, moving or renaming a file: update docs/FILES.md in the same change.
 - After changing engine files run `python3 sdlc/checks/check_structure.py`; after changing a hook also run `python3 sdlc/checks/drill_hooks.py` (must say ARMED) and the same with `ASTERBIT_DRILL_STUB=1` (must say DEAD). CI runs all three on every pull request.
 

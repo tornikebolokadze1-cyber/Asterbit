@@ -6,6 +6,9 @@ The loop, per milestone and per [high-risk] task:
 Rounds are counted from an append-only ledger, never from the model's memory.
 LOW findings are logged but never keep the loop open. If HIGH+MEDIUM do not
 fall between two reviews, the loop stops early and goes to the owner.
+Reviews 2 and 3 must cover exactly the fix: --base is the previous review's
+--head and --head is the fix's commit. Loop ids: M1, M1-T4, gate-spec, ENG-…;
+after the owner decides an escalated loop, continue under a new id (M1-r2).
 
 Usage:
     review_rounds.py review <loop> --base SHA --head SHA --high N --medium N --low N
@@ -14,8 +17,9 @@ Usage:
 Options: --ledger PATH (default: tasks/review-log.jsonl in this repo).
 
 Exit codes. status: 0 = closed clean, 1 = escalate to the owner, 2 = inconclusive
-(ledger unreadable), 3 = continue (the next step is printed).
-review / fix: 0 = recorded, 1 = step not allowed now (nothing written), 2 = inconclusive.
+(ledger unreadable or malformed, or a usage error), 3 = continue (the next step is printed).
+review / fix: 0 = recorded, 1 = step not allowed now (nothing written),
+2 = inconclusive or usage error (nothing written).
 """
 from __future__ import annotations
 
@@ -30,12 +34,33 @@ MAX_FIXES = 2
 DEFAULT_LEDGER = Path(__file__).resolve().parents[2] / "tasks/review-log.jsonl"
 LOOP_ID = re.compile(r"^[A-Za-z0-9._-]{1,40}$")
 SHA = re.compile(r"^[0-9a-f]{7,40}$")
+COUNTS = ("high", "medium", "low")
+
+
+def checked(entry: object) -> dict:
+    """A ledger line must be a known step; review counts must be whole numbers ≥ 0."""
+    if not isinstance(entry, dict) or entry.get("step") not in ("review", "fix") or not isinstance(entry.get("loop"), str):
+        raise ValueError(f"malformed ledger entry: {str(entry)[:80]}")
+    if entry["step"] == "review" and not all(type(entry.get(k)) is int and entry[k] >= 0 for k in COUNTS):
+        raise ValueError(f"review entry needs whole-number counts ≥ 0: {str(entry)[:80]}")
+    return entry
+
+
+def count(text: str) -> int:
+    value = int(text)
+    if value < 0:
+        raise argparse.ArgumentTypeError("a finding count must be 0 or more")
+    return value
+
+
+def same(a: str, b: str) -> bool:
+    return bool(a) and bool(b) and (a.startswith(b) or b.startswith(a))
 
 
 def load(ledger: Path, loop: str) -> list[dict]:
     if not ledger.exists():
         return []
-    entries = [json.loads(line) for line in ledger.read_text(encoding="utf-8").splitlines() if line.strip()]
+    entries = [checked(json.loads(line)) for line in ledger.read_text(encoding="utf-8").splitlines() if line.strip()]
     return [e for e in entries if e.get("loop") == loop]
 
 
@@ -66,8 +91,16 @@ def record(args: argparse.Namespace, entries: list[dict]) -> int:
     if not SHA.match(args.head) or (args.command == "review" and not SHA.match(args.base)):
         print("REVIEW-LOOP: --base/--head must be git commit SHAs (7–40 hex characters)")
         return 1
-    if args.command == "review" and args.base == args.head:
+    if args.command == "review" and same(args.base, args.head):
         print("REVIEW-LOOP: empty diff range (base == head) — record BASE before the work, then review base..head")
+        return 1
+    reviews = [e for e in entries if e["step"] == "review"]
+    if args.command == "fix" and same(args.head, reviews[-1]["head"]):
+        print("REVIEW-LOOP: the fix has no new commit (--head equals the reviewed head) — commit the fix first")
+        return 1
+    if args.command == "review" and reviews and not (same(args.base, reviews[-1]["head"]) and same(args.head, entries[-1]["head"])):
+        print(f"REVIEW-LOOP: review {len(reviews) + 1} must cover exactly the fix: "
+              f"--base {reviews[-1]['head']} --head {entries[-1]['head']}")
         return 1
     entry = {"ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "loop": args.loop,
              "step": args.command, "round": sum(e["step"] == args.command for e in entries) + 1, "head": args.head}
@@ -87,8 +120,8 @@ def parse(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--ledger", type=Path, default=DEFAULT_LEDGER)
     parser.add_argument("--base", default="")
     parser.add_argument("--head", default="")
-    for level in ("high", "medium", "low"):
-        parser.add_argument(f"--{level}", type=int, default=None)
+    for level in COUNTS:
+        parser.add_argument(f"--{level}", type=count, default=None)
     args = parser.parse_args(argv)
     if not LOOP_ID.match(args.loop):
         parser.error("loop id: 1–40 characters from A-Z a-z 0-9 . _ -")
@@ -104,8 +137,8 @@ def main(argv: list[str]) -> int:
         if args.command != "status":
             return record(args, entries)
         step, code = next_step(entries)
-    except (OSError, ValueError, KeyError, TypeError) as error:
-        print(f"REVIEW-LOOP: INCONCLUSIVE — ledger {args.ledger} unreadable ({type(error).__name__}: {error})")
+    except Exception as error:  # any failure proves nothing: inconclusive, never escalate or refuse by accident
+        print(f"REVIEW-LOOP: INCONCLUSIVE — ledger {args.ledger} unreadable or malformed ({type(error).__name__}: {error})")
         return 2
     print(f"REVIEW-LOOP: {args.loop} — {len(entries)} entries in {args.ledger.name}; next: {step}")
     return code
