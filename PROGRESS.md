@@ -4,11 +4,11 @@
 > ჟურნალი მხოლოდ ივსება: ძველი ჩანაწერები არ იცვლება. ფაილების როლები: [PROCESS.md](PROCESS.md) §4.
 
 ## Current State (მიმდინარე მდგომარეობა)
-- **Phase:** 0 — Engine setup — IN PROGRESS (scaffold მზადაა და შენს დამტკიცებას ელოდება)
-- **Branch:** `engine/v0-scaffold` (`main`-ში ჯერ არ გაერთიანებულა) · **GitHub:** private repo `tornikebolokadze1-cyber/Asterbit`, PR #1 განსახილველად
+- **Phase:** 0 — Engine setup — IN PROGRESS (ჩონჩხი `main`-შია საერთო საფუძვლად; ADR-0001…0003 და PROCESS.md დამტკიცებას ელოდება)
+- **Branch:** `main` (PR #1 გაერთიანდა merge commit-ით) · **GitHub:** private repo `tornikebolokadze1-cyber/Asterbit` · **გუნდი:** მფლობელი + თანამშრომელი lashavamleti (წერის უფლება)
 - **Decisions:** ADR-0004 accepted; ADR-0001…0003 proposed
-- **Checks:** სტრუქტურული შემოწმება 92/92 გადის; drill-მა ჩადებული 3 შეცდომიდან 3 დაიჭირა; Claude Code-მა 11-ივე `sdlc-*` ბრძანება აღმოაჩინა
-- **Not built yet:** `.claude/settings.json`, მეხსიერების hook-ები
+- **Checks (2026-10-07, ლოკალური სკრიპტები — რეპოში ჯერ არ დევს):** სტრუქტურა — 197 შემოწმება, PASS; `docs/FILES.md` 51 ფაილიდან 51-ს მოიცავს; ორივემ ჩადებული დეფექტი დაიჭირა (exit 1). Claude Code-მა 11-ივე `sdlc-*` ბრძანება აღმოაჩინა
+- **Not built yet:** `.claude/settings.json`, მეხსიერების hook-ები, სტრუქტურის შემოწმება რეპოში
 
 ## Completed (დასრულებული)
 
@@ -38,13 +38,21 @@
 - შეიქმნა private რეპო https://github.com/tornikebolokadze1-cyber/Asterbit; აიტვირთა `main` და `engine/v0-scaffold`; GitHub-ზე 49 ფაილია
 - გაიხსნა PR #1 (`engine/v0-scaffold` → `main`): მისი merge = ძრავის v0-ის დამტკიცება
 
+### 2026-10-07 — Phase 0.6: თანამშრომელი და დამოუკიდებელი პროექტი
+- მფლობელის მოთხოვნა: პროექტი „ცალკე პროექტი" იყოს, რომ თანამშრომელმა ჩამოტვირთოს და შეცვალოს. შემოწმებამ ოთხი ხარვეზი აჩვენა: `main` ცარიელი იყო; CLAUDE.md მფლობელის კომპიუტერის გლობალურ წესებს ეყრდნობოდა; Claude ყველას მფლობელად ჩათვლიდა; Superpowers plugin სავალდებულოდ ეწერა
+- lashavamleti მოწვეულია წერის უფლებით (GitHub invitation, 2026-10-07 07:55 UTC) — მიღებას ელოდება
+- ახალი: `CONTRIBUTING.md` (თანამშრომლის გზამკვლევი), `docs/FILES.md` (ყველა ფაილის რუკა)
+- CLAUDE.md და PROCESS.md: მფლობელი და თანამშრომლები; კარიბჭეებსა და `main`-ს მხოლოდ მფლობელი ამტკიცებს; უსაფრთხოების წესები რეპოშია და ყველა კომპიუტერზე მოქმედებს; Superpowers სურვილისამებრ; ფაილის დამატებისას `docs/FILES.md` ახლდება
+- მფლობელის გადაწყვეტილებით PR #1 `main`-ში merge commit-ით ერთიანდება, როგორც საერთო საფუძველი; ეს ADR-0001…0003-სა და PROCESS.md-ს არ ამტკიცებს — ისინი `proposed` რჩება. merge commit-ი ინარჩუნებს ამ ჟურნალში ნახსენებ ყველა commit-ს
+- private რეპოში `main`-ის დაცვა (branch protection) GitHub Pro-ს მოითხოვს (API: HTTP 403), ამიტომ „მხოლოდ PR-ით" ჯერ შეთანხმებაა და არა ტექნიკური აკრძალვა
+
 ## In Progress (მიმდინარე)
-- l.vamleti@asterbit.io-ს მოწვევა რეპოში — საჭიროა მისი GitHub username (ელფოსტით ანგარიში საჯაროდ არ იძებნება)
+- lashavamleti-ს მიერ მოწვევის მიღება
 - შენი პრინციპები handoff-ისა და შეჯამებისთვის → `memory/README.md`
-- scaffold-ის განხილვა → ADR-0001…0003-ისა და PROCESS.md-ის დამტკიცება → `main`-ში გაერთიანება
+- ADR-0001…0003-ისა და PROCESS.md-ის განხილვა და დამტკიცება (ADR-0002-ში ჩასამატებელია: თანამშრომლებისთვის Superpowers სურვილისამებრია)
 
 ## Next Steps (შემდეგი ნაბიჯები)
-1. harness v0: `.claude/settings.json` (Sonnet 5.5 high, Opus 5.5 advisor, `autoCompactWindow: 650000`, უფლებების საბაზისო სია) + გადაწყვეტილება `cleanupPeriodDays`-ზე
+1. harness v0 (ახალ branch-ზე): `.claude/settings.json` (Sonnet 5.5 high, Opus 5.5 advisor, `autoCompactWindow: 650000`, უფლებების საბაზისო სია) + გადაწყვეტილება `cleanupPeriodDays`-ზე + სტრუქტურის შემოწმება რეპოში (`sdlc/checks/`: სავალდებულო ფაილები, `docs/FILES.md`-ის სისრულე)
 2. მეხსიერების hook-ები (PostCompact → `memory/`, SessionStart → `now.md` + handoff) და მათი drill-ები
 3. ძრავის საცდელი გაშვება „სათამაშო" იდეაზე (ეტაპები 1–6)
 4. ნამდვილი პროდუქტი: `/sdlc-intent`

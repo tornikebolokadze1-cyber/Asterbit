@@ -11,8 +11,11 @@
 - [x] PROCESS.md (working agreement) + PROGRESS.md (work log) — added 2026-10-06 after the owner noticed they were missing
 - [x] Memory & context interview → ADR-0004 accepted (2026-10-06: 65% · Obsidian vault · grep → QMD at trigger · ADR + git + wrap check)
 - [ ] Owner writes the handoff / session-summary principles → memory/README.md
-- [ ] Owner reviews the scaffold → ADR-0001…0003 accepted → merge `engine/v0-scaffold` into `main`
+- [x] Collaborator access + standalone repo: lashavamleti invited with write access (GitHub invitation 2026-10-07); CONTRIBUTING.md, docs/FILES.md; CLAUDE.md/PROCESS.md People + Safety
+- [x] Scaffold merged into `main` as the shared base — PR #1, merge commit (owner's decision 2026-10-07)
+- [ ] Owner reviews ADR-0001…0003 and PROCESS.md → accepted
 - [ ] Harness v0: .claude/settings.json (models, effort, advisor, compaction window, permissions baseline) + memory hooks (PostCompact → memory/, SessionStart → now.md + handoff)
+- [ ] Structure check in the repo (`sdlc/checks/`): required files exist, front matter, links, docs/FILES.md lists every tracked file — drilled (clean control + seeded defects)
 - [ ] Drill every hook: clean control passes, seeded case fails
 - [ ] Engine dry run: a toy intent through phases 1–6, every gate exercised
 - [ ] Start the real product: `/sdlc-intent`
@@ -25,3 +28,4 @@
 
 ## Done log
 - 2026-10-06 — repository initialised; branch `engine/v0-scaffold`.
+- 2026-10-07 — lashavamleti invited; repo made standalone; PR #1 merged into `main`.
