@@ -44,7 +44,7 @@ Option C. Settings to apply in the harness step — **not applied yet**:
 
 Subagents (already defined in `.claude/agents/`): `architect` and `auditor` run `claude-opus-5-5` at effort `high`; `verifier` runs `claude-sonnet-5-5` at effort `medium`. Full model IDs are pinned so models change only through a new ADR, never silently with a Claude Code update.
 
-Loop limits: 3 fix attempts per failing check; 2 auditor fix rounds, then report UNVERIFIED.
+Loop limits: 3 fix attempts per failing check; 2 auditor fix rounds, then report UNVERIFIED. Refined by ADR-0006 (2026-10-07): review → fix → review → fix → final review → the owner, counted by `sdlc/checks/review_rounds.py`.
 
 ## Stage 2 — documented, NOT active
 - Coding: Opus 5.5 for tasks tagged high-risk or complex, Sonnet 5.5 for the rest.

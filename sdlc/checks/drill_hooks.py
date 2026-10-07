@@ -26,6 +26,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from drill_checks import drill_engine_checks, tracked_copy  # check-script drills (ADR-0006); sibling module
+
 ROOT = Path(__file__).resolve().parents[2]
 HOOKS = ROOT / ".claude/hooks"
 STUB = os.environ.get("ASTERBIT_DRILL_STUB") == "1"
@@ -86,6 +88,10 @@ class Drill:
     def expect_bool(self, gate: str, case: str, ok: bool) -> None:
         """For gates that write files or context instead of blocking: ok must come from the gate's own output."""
         self.add(gate, "WORKS" if ok else "MISSED", case)
+
+    def expect_clean(self, gate: str, case: str, ok: bool) -> None:
+        """A clean control that fails is a defect in the gate (it blocks good work), not a missed seed."""
+        self.add(gate, "PASSED" if ok else "FALSE-BLOCK", case)
 
 
 def drill_guard(drill: Drill, repo: Path) -> None:
@@ -223,9 +229,8 @@ def drill_memory(drill: Drill, project: Path) -> None:
 def drill_structure_check(drill: Drill, scratch: Path) -> None:
     check = [sys.executable, str(ROOT / "sdlc/checks/check_structure.py")]
     clean = subprocess.run(check + [str(ROOT)], capture_output=True, text=True, timeout=120)
-    drill.expect_bool("check_structure", "clean control: this repo", clean.returncode == 0 and "PASS" in clean.stdout)
-    copy = scratch / "structure"
-    shutil.copytree(ROOT, copy, ignore=shutil.ignore_patterns(".kilo", "__pycache__", "node_modules"))
+    drill.expect_clean("check_structure", "clean control: this repo", clean.returncode == 0 and "PASS" in clean.stdout)
+    copy = tracked_copy(scratch / "structure")
     (copy / "CONTRIBUTING.md").unlink()
     (copy / "docs/unlisted-note.md").write_text("x\n", encoding="utf-8")
     settings = json.loads((copy / ".claude/settings.json").read_text(encoding="utf-8"))
@@ -268,6 +273,7 @@ def main() -> int:
         drill_read_only_agents(drill, repo)
         drill_memory(drill, Path(tmp) / "project")
         drill_structure_check(drill, Path(tmp))
+        drill_engine_checks(drill, Path(tmp))
     return report(drill)
 
 
