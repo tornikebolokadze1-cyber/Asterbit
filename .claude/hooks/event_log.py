@@ -30,11 +30,13 @@ MAX_SUMMARY = 200
 SUMMARY_FIELDS = ("command", "file_path", "notebook_path", "pattern", "url", "query", "subagent_type", "description")
 HIDDEN = "[REDACTED credential]"
 # Generic credential shapes, used only here: widening secret_patterns would change the commit scan (ADR-0005).
+SECRET_WORD = r"(?:pass(?:word)?|passwd|pwd|secret(?:[_-]?key)?|token|api[_-]?key|access[_-]?key|private[_-]?key)"
+VALUE = r"(?!['\"]?\[REDACTED)(\"[^\"]*\"|'[^']*'|[^\s'\"&]+)"   # a quoted value whole, else up to a space
 CREDENTIALS = (
-    (re.compile(r"(?i)(\bauthorization\s*[:=]\s*(?:(?:basic|bearer|token)\s+)?)([^\s'\"]+)"), rf"\1{HIDDEN}"),
-    (re.compile(r"(?i)(\bbearer\s+)(?!\[REDACTED)([^\s'\"]+)"), rf"\1{HIDDEN}"),
-    (re.compile(r"(?i)(\b[\w.-]*(?:pass(?:word)?|passwd|pwd|secret|token|api[_-]?key)[\w.-]*\s*[=:]\s*['\"]?)(?!\[REDACTED)([^\s'\"&]+)"),
-     rf"\1{HIDDEN}"),
+    (re.compile(r"(?i)(\bauthorization\s*[:=]\s*(?:(?:basic|bearer|token)\s+)?)(?!(?:basic|bearer|token)\s)" + VALUE), rf"\1{HIDDEN}"),
+    (re.compile(r"(?i)(\bbearer\s+)" + VALUE), rf"\1{HIDDEN}"),
+    # the key must END in the secret word (--passes=3 stays); a closing quote may follow it ({"password": …})
+    (re.compile(r"(?i)(\b[\w.-]*" + SECRET_WORD + r"['\"]?\s*[=:]\s*)" + VALUE), rf"\1{HIDDEN}"),
     (re.compile(r"(://[^/\s:@]+:)([^/\s@]+)(@)"), rf"\1{HIDDEN}\3"),
 )
 

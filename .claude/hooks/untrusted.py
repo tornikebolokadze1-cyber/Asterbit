@@ -21,8 +21,8 @@ PATTERNS: dict[str, re.Pattern[str]] = {
         r"\b(?:ignore|disregard|forget|override)\b[^\n]{0,40}\b(?:previous|prior|above|earlier|all|your)\b"
         r"[^\n]{0,20}\b(?:instructions?|rules?|prompts?|guidelines?)\b", re.I),
     "survive summarisation": re.compile(
-        r"\b(?:retain|keep|preserve|include|carry|repeat)\b[^\n]{0,40}\b(?:when|while|during|in|after)\b"
-        r"[^\n]{0,20}\b(?:summari[sz]\w*|compact\w*|handoffs?)\b", re.I),
+        r"\b(?:retain|keep|preserve|include|carry|repeat)\s+(?:this|these|the\s+following|it)\b[^\n]{0,40}"
+        r"\b(?:when|while|during|in|after|across)\b[^\n]{0,20}\b(?:summar\w*|compact\w*|handoffs?)\b", re.I),
     "role spoofing": re.compile(r"(?:^\s*(?:system|developer)\s*:|<\s*/?\s*(?:system|instructions?)\s*>)", re.I | re.M),
     "forged fence": re.compile(r"<<<\s*(?:END\s+)?" + re.escape(FENCE)),  # the marker syntax, not the bare name in docs
 }

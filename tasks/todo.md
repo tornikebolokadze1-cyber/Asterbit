@@ -30,6 +30,8 @@
 - [ ] Code graph: Graphify when product code exists, codebase-memory-mcp at ~50 source files — new ADR at that point (owner's choice 2026-10-07, ADR-0006)
 - [ ] Engine regression evals: 20–50 real tasks, run on every change to CLAUDE.md / .claude/** — CI exists (PR #2); built from the dry run's real tasks (sdlc/design/evals-and-gates.md §5)
 - [ ] Auditor LOWs (ENG-v2-P3P6 review 1), parked: `run_gates.py` reports a bad gate config (invalid regex, missing group, unreadable file) as FAIL (exit 1) instead of INCONCLUSIVE; `agent_report.py` turns the whole report INCONCLUSIVE on one corrupt log line and prints "context now 0" when a transcript has no usage; `memory_handoff.py` archives a hand-written checkpoint as a version, so the first real compaction reads `compaction: 2`
+- [ ] Auditor LOW (ENG-v2-P3P6 review 2), parked: `context_monitor.py` skips any event with `agent_type`; if Claude Code also sets it on the main thread of a `claude --agent <name>` session (unverified), the monitor would stay silent there — `agent_id` alone marks a subagent. Verify against real hook input before changing; the project sets no `agent` today
+- [ ] Observation (ENG-v2-P3P6 review 2, owner's yes needed — ADR-0005 hook): `guard.py` blocks the read-only `git stash list` for read-only agents ("a git command that changes the repo")
 - [ ] Terminal CLI `~/.local/bin/claude` is 2.1.92; the VS Code extension bundles 2.1.289 — update the CLI (owner's call)
 - [ ] Global UserPromptSubmit hook calls MemPalace, but the package is not installed → fails silently on every prompt (owner's call; global config)
 
