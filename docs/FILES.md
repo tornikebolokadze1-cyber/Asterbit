@@ -103,10 +103,13 @@ Subagent (დამხმარე აგენტი) ცალკე Claude-�
 - [`ai-security.md`](../sdlc/design/ai-security.md) — დაცვის 9 ფენა, საფრთხეების კატალოგი (OWASP LLM Top 10 + მეხსიერების მოწამვლა) კონტროლებით.
 - [`ai-observability.md`](../sdlc/design/ai-observability.md) — რა კითხვებზე უნდა ვპასუხობდეთ, ლოგის სქემა, საკონტროლო ზოლები და სამი ვარიანტი Phase 9-ისთვის.
 
-## `sdlc/research/` — 2 კვლევა
+## `sdlc/research/` — 5 კვლევა
 
 - [`playbook-notes.md`](../sdlc/research/playbook-notes.md) — Anthropic-ის „AI-native SDLC playbook"-ის შეჯამება საკუთარი სიტყვებით: მთავარი აზრი, ექვსი ეტაპი წრედ, პრაქტიკების ცხრილი ჩვენი სტატუსით.
 - [`engine-selection.md`](../sdlc/research/engine-selection.md) — ძრავის შერჩევა awesome-ai-pulse-georgia-ს კოლექციიდან: კრიტერიუმები, კანდიდატები, დასკვნა.
+- [`repo-study.md`](../sdlc/research/repo-study.md) — ცხრა რეპოს (Superpowers, Anthropic Skills, Spec Kit, Matt Pocock, Karpathy, Ponytail, GSD, AIWorkHub, Atlas) კოდის დონეზე შესწავლა: რა არის თითოეული სინამდვილეში, 18 რეკომენდებული ფრაგმენტი (F1–F18) ვერდიქტით, რას არ ვიღებთ და რატომ, უსაფრთხოების შენიშვნები და AI Pulse-ის ექვსი დამატებითი კანდიდატი.
+- [`models-gpu-graphs.md`](../sdlc/research/models-gpu-graphs.md) — ვებ-კვლევა (2026-10-07): typesafe.ai, ჩინური ღია მოდელები, GPU-ს ქირაობის პლატფორმები და ფასები, OpenAI-ის მოდელი შემმოწმებლად, ცოდნის გრაფის ინსტრუმენტები და ის, როგორ გავიგოთ კონტექსტის პროცენტი.
+- [`engine-v2-gaps.md`](../sdlc/research/engine-v2-gaps.md) — მფლობელის პრომპტის ყოველი პუნქტი ძრავის ახლანდელ მდგომარეობასთან შედარებით და ექვსი აწყობის პაკეტი (P1–P6): რას აკეთებს თითოეული, რომელ ფაილებს ეხება და რას სჭირდება მფლობელის „კი".
 
 ## რა არ არის რეპოში
 
