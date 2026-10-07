@@ -25,7 +25,7 @@ After release, every finding, bug or new idea becomes a new intent in docs/chang
 
 Gate rules:
 - Read docs/sdlc-state.md before any phase work. Do not start phase N+1 until phase N is `approved`.
-- No product code (anything outside docs/, tasks/, memory/, sdlc/, .claude/, .github/, .obsidian/ and the root files README.md, CLAUDE.md, PROCESS.md, PROGRESS.md, CONTRIBUTING.md, .gitignore) before docs/plan.md is approved.
+- No product code (anything outside docs/, tasks/, memory/, sdlc/, .claude/, .github/, .obsidian/ and the root files README.md, CLAUDE.md, AGENTS.md, PROCESS.md, PROGRESS.md, CONTRIBUTING.md, env.example, .gitignore) before docs/plan.md is approved.
 - Before asking for approval, run the `auditor` subagent on the artifact and show its verdict.
 - Approval = the owner's explicit words. Record who and when in docs/sdlc-state.md, then commit.
 - After every phase, gate or milestone, append a dated entry to PROGRESS.md and refresh its Current State / In Progress / Next Steps. Never rewrite old entries.
@@ -88,4 +88,5 @@ The owner's personal global rules exist only on the owner's machine; every other
 - .claude/hooks/ enforces the rules below (guard.py, commit_secrets.py). If a hook blocks you, explain why and ask — never work around a hook. Stage and commit in separate commands so the secret scan sees the staged files; pass long commit or PR texts as files (`git commit -F`, `gh pr create --body-file`).
 - Never force-push, rewrite pushed history, or run rm -rf, git reset --hard or git clean -f.
 - Delete a file only after the person you work with agrees; a deletion reaches main only through a pull request the owner approves.
-- Secrets never enter git; .env* is ignored.
+- Secrets never enter git; .env* is ignored. The names of the settings the project needs (no values) go in env.example — no leading dot, so the deny rule on .env.* keeps guarding real secret files.
+- AGENTS.md repeats this section for AI agents that do not read CLAUDE.md (Codex / GPT, Cursor, Kilo): change both in the same commit.
