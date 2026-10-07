@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 REQUIRED_FILES = (
-    "README.md", "CLAUDE.md", "PROCESS.md", "PROGRESS.md", "CONTRIBUTING.md",
+    "README.md", "CLAUDE.md", "AGENTS.md", "PROCESS.md", "PROGRESS.md", "CONTRIBUTING.md",
     ".gitignore", ".claude/settings.json", "docs/FILES.md", "docs/sdlc-state.md",
     "docs/decisions/README.md", "tasks/todo.md", "tasks/lessons.md",
     "memory/README.md", "memory/now.md",

@@ -4,10 +4,10 @@
 > ჟურნალი მხოლოდ ივსება: ძველი ჩანაწერები არ იცვლება. ფაილების როლები: [PROCESS.md](PROCESS.md) §4.
 
 ## Current State (მიმდინარე მდგომარეობა)
-- **Phase:** 0 — Engine setup — IN PROGRESS (harness v0 `main`-შია — PR #2; ძრავა v2-ის ექვსივე პაკეტი აწყობილია: P1+P2 — PR #3, P3–P6 — PR #4; ორივე მფლობელის გაერთიანებას ელოდება)
-- **Branch:** `engine/v2` (PR #3) და `engine/v2-runtime` (PR #4, მოიცავს `engine/v2`-ს); `main`-ში PR-ებით შევა · **GitHub:** private repo `tornikebolokadze1-cyber/Asterbit` · **გუნდი:** მფლობელი + თანამშრომელი lashavamleti (წერის უფლება, მოწვევა მიღებულია)
+- **Phase:** 0 — Engine setup — IN PROGRESS (ძრავა v1 და v2 `main`-შია — PR #2, #3, #4; `AGENTS.md` და `env.example` — PR #5)
+- **Branch:** `main` (`d1b66c7`); `engine/agents-env` — PR #5 · **GitHub:** private repo `tornikebolokadze1-cyber/Asterbit` · **გუნდი:** მფლობელი + თანამშრომელი lashavamleti (წერის უფლება, მოწვევა მიღებულია)
 - **Decisions:** ADR-0004 accepted; ADR-0001…0003, ADR-0005 და ADR-0006 proposed
-- **Checks (2026-10-07, `engine/v2-runtime`, `sdlc/checks/`):** სტრუქტურა — 329 შემოწმება, PASS (77 ფაილი); წვრთნა — 131 შემთხვევა, ARMED (50 CAUGHT, 42 WORKS, 32 PASSED, 7 ASKED); „უმოქმედო" hook-ებით — DEAD (exit 1)
+- **Checks (2026-10-07, `engine/v2-runtime` = `main`-ის v2 ნაწილი, `sdlc/checks/`):** სტრუქტურა — 329 შემოწმება, PASS (77 ფაილი); წვრთნა — 131 შემთხვევა, ARMED (50 CAUGHT, 42 WORKS, 32 PASSED, 7 ASKED); „უმოქმედო" hook-ებით — DEAD (exit 1)
 - **Not built yet:** ნამდვილი `/compact`-ით hook-ის გამოცდა (მხოლოდ მფლობელს შეუძლია გაშვება); ძრავის საცდელი გაშვება
 
 ## Completed (დასრულებული)
@@ -88,11 +88,17 @@
 - მფლობელის გადაწყვეტილება (2026-10-07): ძრავი Phase 0-ის კარიბჭემდე მსუბუქად შენდება — აუდიტორის ციკლის, mutant-ებისა და ციკლის ჟურნალის გარეშე; რჩება უსაფრთხოების წესები, `check_structure.py`, hook-ის ცვლილებისას წვრთნა და CI. ძრავით გაშვებული სამუშაო (საცდელი გაშვება, პროდუქტი) სრულ ციკლს იყენებს → CLAUDE.md, PROCESS.md, ADR-0006, `tasks/lessons.md`
 - გზად: დისკი გაივსო (117 MB დარჩა) და სესიის დროებითი საქაღალდე გასუფთავდა — worktree და fix 1-ის შეუნახავი ნამუშევარი დაიკარგა. commit-ები GitHub-ზე იყო, ამიტომ worktree თავიდან შეიქმნა `~/Asterbit-runtime`-ში და review 1-ის ჩანაწერი ხელახლა ჩაიწერა. ამ ჩანაწერში სტრუქტურის რიცხვი 328 ერთით ნაკლებია — now.md-ის ბმულის შემდეგ 329-ია
 
+### 2026-10-07 — Phase 0.11: ძრავა v2 `main`-შია; `AGENTS.md` და `env.example` (branch `engine/agents-env`)
+- მფლობელის „კი"-ს შემდეგ PR #3 (`a0414c8`) და PR #4 (`d1b66c7`) `main`-ში გაერთიანდა; ორივეზე CI მწვანე იყო, `main`-ზე `check_structure.py` — 330 შემოწმება, PASS. ADR-ები `proposed` რჩება Phase 0-ის კარიბჭემდე
+- მფლობელის საქაღალდე `~/Asterbit` `main`-ზე გადავიდა; `settings.json`-ის ორი ცარიელი ხაზი (Claude-ს არ ჩაუწერია) `git stash`-ში გადაიდო და არ წაშლილა. გადასვლისთანავე ახალი hook-ები ამ სესიაში ჩაირთო — `.claude/logs/`-ში მოვლენების ჟურნალი და კონტექსტის მზომის ფაილი გაჩნდა
+- მფლობელმა იპოვა ორი ხარვეზი: არც `AGENTS.md` იყო (წესები Codex / GPT, Cursor, Kilo-სთვის — მათ `CLAUDE.md` არ წაუკითხავთ) და არც საიდუმლო პარამეტრების ნიმუში. ორივე დაემატა; `AGENTS.md` `check_structure.py`-ის სავალდებულო ფაილებშია
+- ნიმუში `env.example` ჰქვია და არა `.env.example`: პროექტის დაცვის წესი `Read(./.env.*)` Claude-ს `.env.example`-ის ჩაწერასაც უკრძალავს. მფლობელმა სახელის შეცვლა აირჩია, დაცვის წესი უცვლელია
+
 ## In Progress (მიმდინარე)
-- ძრავა v2: PR #3 და PR #4 მფლობელის გაერთიანებას ელოდება (ჯერ #3, მერე #4); ციკლი `ENG-v2-P3P6` fix 2-ზე შეჩერდა მფლობელის გადაწყვეტილებით
+- PR #5 (`AGENTS.md`, `env.example`) მფლობელის გაერთიანებას ელოდება
 
 ## Next Steps (შემდეგი ნაბიჯები)
-1. მფლობელი: PR #3, მერე PR #4 `main`-ში; გადაწყვეტილება `commit_secrets`-ის ხარვეზზე (`tasks/todo.md`)
+1. მფლობელი: PR #5 `main`-ში; გადაწყვეტილება `commit_secrets`-ის ხარვეზზე (`tasks/todo.md`); ზედმეტი სამუშაო ასლის `~/Asterbit-runtime` წაშლა (მფლობელის თანხმობით)
 2. ნამდვილი `/compact`-ით მეხსიერების hook-ის გამოცდა (`memory/episodic/handoffs/`) — მფლობელი უშვებს `/compact`-ს, Claude ამოწმებს შედეგს
 3. ძრავის საცდელი გაშვება ახალ სესიაში: ხარჯების კალკულატორი (ვებგვერდი), ეტაპები 1–6, branch `dryrun/expense-calculator` (`main`-ში არ შევა), კარიბჭეები `DRY-RUN` ნიშნით (მფლობელის გადაწყვეტილება 2026-10-07); ნაპოვნი ხარვეზების გასწორება
 4. Phase 0-ის კარიბჭე: auditor მთელ ძრავაზე → ADR-0001…0003, ADR-0005, ADR-0006 და PROCESS.md-ის დამტკიცება
