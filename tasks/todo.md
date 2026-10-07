@@ -15,7 +15,7 @@
 - [x] Scaffold merged into `main` as the shared base — PR #1, merge commit (owner's decision 2026-10-07)
 - [x] Harness v0 (ADR-0005): .claude/settings.json + guard / commit-secrets / memory hooks — drill 89 cases ARMED, stub DEAD; live: `.env.probe` write and verifier `touch` blocked (2026-10-07)
 - [x] Structure check in the repo (`sdlc/checks/check_structure.py`) — 269 checks PASS; seeded copy: 3/3 defects caught (now a drill case)
-- [ ] CI: `.github/workflows/checks.yml` (structure, drill, stub drill, gitleaks) — tick when it is green on its own pull request
+- [x] CI: `.github/workflows/checks.yml` (structure, drill, stub drill, gitleaks) — green on PR #2, all 7 steps ran (https://github.com/tornikebolokadze1-cyber/Asterbit/actions/runs/37601321945)
 - [ ] Live `/compact` → handoff appears in memory/episodic/handoffs/ (hook logic drilled with synthetic input only)
 - [ ] Owner reviews ADR-0001…0003, ADR-0005 and PROCESS.md → accepted (Phase 0 gate, after the dry run)
 - [ ] Engine dry run: a toy intent through phases 1–6, every gate exercised

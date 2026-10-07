@@ -54,6 +54,7 @@
 - ცოცხალი გამოცდა: საიდუმლო ფაილის (`.env.probe`) ჩაწერა პროექტის hook-მა დაბლოკა (ASTERBIT-GUARD); verifier აგენტის `touch` დაიბლოკა „read-only agent" შეტყობინებით და ფაილი არ შეიქმნა
 - დოკუმენტები: CLAUDE.md და PROCESS.md (push სამუშაო branch-ზე თავისუფლად, `main`-ში — არასდროს; hook-ები; შემოწმებები), CONTRIBUTING.md (Python 3, დაცვა), docs/FILES.md, README.md, `memory/README.md`-ში რვა პრინციპი, ADR-0002-ში Superpowers-ის შენიშვნა, `/sdlc-status` PROGRESS.md-საც კითხულობს
 - auditor-ის პირველმა შემოწმებამ harness ჩააჭრა (FAIL): `main`-ზე ყოფნისას `git push origin HEAD` არ იბლოკებოდა; პლუს რვა საშუალო ხარვეზი (`bash -c`-ში დამალული ბრძანება, commit ფაილის სახელით სკანირებას გვერდს უვლიდა, `switch -f`/`branch -D` უკითხავად, handoff-ის ფაილი CI-ს გააწითლებდა და სხვ.). ყველა გასწორდა და თითოეულს წვრთნის შემთხვევა დაემატა. მეორე რაუნდმა კიდევ ერთი გზა იპოვა (`git push origin 2>&1` — გადამისამართება branch-ის სახელად ითვლებოდა); გასწორდა და წვრთნით შემოწმდა. მესამე აუდიტი არ ჩატარებულა (ორი რაუნდის ლიმიტი), ამიტომ ბოლო გასწორებას მხოლოდ წვრთნა ადასტურებს
+- PR #2 (`engine/v1` → `main`): CI მწვანეა — 7 ნაბიჯი, მათ შორის „უმოქმედო" hook-ებით DEAD და gitleaks (https://github.com/tornikebolokadze1-cyber/Asterbit/actions/runs/37601321945). ცოცხალი გამოცდები საბოლოო hook-ზე გამეორდა და გავიდა
 - გზად: lashavamleti-მ მოწვევა მიიღო (2026-10-07, GitHub API: role `write`)
 
 ## In Progress (მიმდინარე)

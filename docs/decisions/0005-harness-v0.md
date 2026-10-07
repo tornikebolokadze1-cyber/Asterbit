@@ -53,9 +53,9 @@ A rule that exists only on the owner's machine protects nothing on a collaborato
 ## Verification (როგორ შევამოწმებთ)
 - `python3 sdlc/checks/drill_hooks.py` → `RESULT: ARMED` (89 cases on 2026-10-07: 50 seeded defects caught, 25 clean controls passed, 7 ask cases asked, 7 file/context checks worked, including the gitleaks-only case and a 3-defect copy for the structure check); `ASTERBIT_DRILL_STUB=1 …` → `RESULT: DEAD` (exit 1).
 - The first audit (2026-10-07) failed the harness on a real hole — `git push origin HEAD` on main was not blocked — plus eight medium findings; all were fixed and each now has a drill case. The second audit found one more way through — a redirect (`git push origin 2>&1`) was read as a branch name — fixed in `without_redirects()` and drilled (3 push cases on main, 2 clean controls); no third audit round was run (two-round limit), so this last fix rests on the drill.
-- Live wiring, 2026-10-07: writing a `.env.probe` file was blocked by the project hook (ASTERBIT-GUARD); the `verifier` agent's `touch` was blocked with the read-only message, and the file was not created.
+- Live wiring, 2026-10-07, re-run on the final guard: writing a `.env.probe2` file was blocked by the project hook (ASTERBIT-GUARD); the `verifier` agent's `touch` was blocked with the read-only message and the file was not created; Claude's own commit (scanned: built-in patterns + gitleaks) and push of `engine/v1` went through.
 - Not yet verified live: a real `/compact` writing `memory/episodic/handoffs/` (the hook logic is drilled with synthetic input only); a live "ask" prompt from the guard (the JSON format is drilled and follows the hooks documentation); the advisor tool working on every collaborator's account.
-- CI must be green on the pull request that introduces it.
+- CI green on PR #2 (2026-10-07): structure 269 checks PASS, drill ARMED with gitleaks installed (no skipped case), stub DEAD, gitleaks history clean — https://github.com/tornikebolokadze1-cyber/Asterbit/actions/runs/37601321945
 
 ## Links
 - [ADR-0003](0003-model-orchestration-phase-1.md) · [ADR-0004](0004-context-and-memory.md) · [ADR-0002](0002-engine-base-native-plus-superpowers.md)
