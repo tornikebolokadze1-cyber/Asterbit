@@ -30,10 +30,12 @@ NAMED_PATH = re.compile(
 )
 LINK = re.compile(r"\]\(([^)\s]+)\)")
 CLARIFY = "[NEEDS CLARIFICATION"
+CLARIFY_PLACEHOLDER = "[NEEDS CLARIFICATION: <question>]"  # the templates' own guidance — the only exemption
 DONE_STATUSES = {"approved", "accepted"}
 KNOWN_STATUSES = DONE_STATUSES | {"draft", "rejected"}
 ARTIFACTS = ("intent", "prd", "trd", "spec", "plan")
-# Tolerant of bold, indentation, numbered lists and table cells; a format the regex misses fails loudly below.
+# Tolerant of bold, indentation, numbered lists and table cells. If NO row/requirement matches, the check fails
+# loudly below; a single row in an unusual format (e.g. "must (MVP)", "### FR-2") can still be missed.
 FEATURE_ROW = re.compile(r"^\s*\|\s*\**(P-\d+)\b", re.M)
 MUST_FEATURE = re.compile(r"^\s*\|\s*\**(P-\d+)\**\s*\|.*\|\s*\**must(?:[- ]have)?\**\s*\|", re.M | re.I)
 REQUIREMENT = re.compile(r"^\s*(?:[-*+]|\d+[.)]|\|)\s*\**(N?FR-\d+)\b", re.M)
@@ -169,7 +171,8 @@ def check_artifacts(root: Path, report: Report) -> None:
             report.check(status in KNOWN_STATUSES, f"{docs[name].relative_to(root)}: unknown status '{status}' — artifact checks cannot run")
         approved = {name for name, status in statuses.items() if status in DONE_STATUSES}
         for name in sorted(approved):
-            report.check(not any(CLARIFY in line for line in content_lines(docs[name])),
+            text = docs[name].read_text(encoding="utf-8").replace(CLARIFY_PLACEHOLDER, "")
+            report.check(CLARIFY not in text,
                          f"{docs[name].relative_to(root)}: approved but still has {CLARIFY}]")
         if "prd" in approved:
             report.check(bool(FEATURE_ROW.search("\n".join(content_lines(docs["prd"])))),

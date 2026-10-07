@@ -147,6 +147,10 @@ def drill_artifact_checks(drill, scratch: Path) -> None:
     empty = subprocess.run(check, capture_output=True, text=True, timeout=120)
     drill.expect_bool(gate, "approved spec with no requirement, and an unknown status, are reported — never a silent pass",
                       empty.returncode == 1 and "no FR-n/NFR-n requirement found" in empty.stdout and "unknown status 'final'" in empty.stdout)
+    (copy / "docs/prd.md").write_text(PRD + "\n> [!question] Currency [NEEDS CLARIFICATION: GEL or USD?]\n", encoding="utf-8")
+    callout = subprocess.run(check, capture_output=True, text=True, timeout=120)
+    drill.expect_bool(gate, "open question hidden in an Obsidian callout of an approved PRD → reported",
+                      callout.returncode == 1 and "docs/prd.md: approved but still has [NEEDS CLARIFICATION]" in callout.stdout)
 
 
 def script(name: str, *args: str) -> subprocess.CompletedProcess:
