@@ -25,7 +25,8 @@
 - [ ] Flaky drill case (found 2026-10-07): `commit_secrets` "generic key only gitleaks knows" MISSED in 1 of 4 local runs, so CI can turn red at random. Likely cause UNVERIFIED: the random value can hit a gitleaks stopword or entropy limit. Fix: a deterministic high-entropy value assembled at run time, then 20 repeated runs
 - [ ] Auditor LOW (ENG-v2-P1P2 review 1): requirements in `docs/changes/<n>/` are traced against the root `tasks/todo.md`, so a change's requirement can look traced by an unrelated product task with the same ID — use a change-local todo or prefixed IDs when the first change folder appears
 - [ ] Auditor note (ENG-v2-P1P2 review 1): `review_rounds.py` checks SHA format only, not that the commits exist or that base is an ancestor of head — add a `git merge-base --is-ancestor` check if a wrong range is ever recorded
-- [ ] Stage-2 orchestration (Fable 5.1, ChatGPT 6.1 Astra via Codex) — when the owner decides (ADR-0003)
+- [ ] Stage-2 orchestration (Fable 5.1; OpenAI `gpt-6.1-sol`, `gpt-6-astra` for milestone audits, via Codex; an open-weight model through a hosted API first) — when the owner decides (ADR-0003, ADR-0006, sdlc/research/models-gpu-graphs.md)
+- [ ] Code graph: Graphify when product code exists, codebase-memory-mcp at ~50 source files — new ADR at that point (owner's choice 2026-10-07, ADR-0006)
 - [ ] Engine regression evals: 20–50 real tasks, run on every change to CLAUDE.md / .claude/** — needs a GitHub remote + CI
 - [ ] Terminal CLI `~/.local/bin/claude` is 2.1.92; the VS Code extension bundles 2.1.289 — update the CLI (owner's call)
 - [ ] Global UserPromptSubmit hook calls MemPalace, but the package is not installed → fails silently on every prompt (owner's call; global config)

@@ -13,7 +13,7 @@ tags: [models, orchestration]
 # 0003 — Model orchestration, stage 1
 
 ## Context (კონტექსტი)
-Owner's instruction (2026-10-06): start simple — Sonnet 5.5 is the main coder at high effort; Opus 5.5 is the main advisor and auditor. A later stage (not now): Opus 5.5 and Sonnet 5.5 code; Fable 5.1 and ChatGPT 6.1 Astra handle architecture decisions and review.
+Owner's instruction (2026-10-06): start simple — Sonnet 5.5 is the main coder at high effort; Opus 5.5 is the main advisor and auditor. A later stage (not now): Opus 5.5 and Sonnet 5.5 code; Fable 5.1 and ChatGPT 6.1 Astra handle architecture decisions and review. (Corrected 2026-10-07: OpenAI's real API IDs are `gpt-6-astra` and `gpt-6.1-sol`; there is no "6.1 Astra" — ADR-0006, `sdlc/research/models-gpu-graphs.md` §4.)
 
 Verified in the Claude Code docs (the VS Code extension bundles v2.1.289; checked 2026-10-06):
 - The advisor tool (`advisorModel` setting, `/advisor`, `--advisor`) lets the main model consult a stronger model at key moments; "Sonnet main + Opus advisor" is a documented pairing. It is experimental and needs the Anthropic API (subscription accounts work).
@@ -48,7 +48,7 @@ Loop limits: 3 fix attempts per failing check; 2 auditor fix rounds, then report
 
 ## Stage 2 — documented, NOT active
 - Coding: Opus 5.5 for tasks tagged high-risk or complex, Sonnet 5.5 for the rest.
-- Architecture and review: Fable 5.1 as advisor/architect (documented pairing "Sonnet main + Fable advisor"; needs Fable access and may bill to usage credits); ChatGPT 6.1 Astra as a cross-vendor reviewer through the Codex plugin (openai/codex-plugin-cc, installed). Claude could not verify that model's availability or ID — check when stage 2 starts.
+- Architecture and review: Fable 5.1 as advisor/architect (documented pairing "Sonnet main + Fable advisor"; needs Fable access and may bill to usage credits); an OpenAI model as a cross-vendor reviewer through the Codex plugin (openai/codex-plugin-cc, installed): `gpt-6.1-sol` with `/codex:adversarial-review` by default, `gpt-6-astra` for milestone audits (IDs and prices verified 2026-10-07, ADR-0006). A local open-weight model (DeepSeek V4-Pro or Qwen3-Coder-Next) is tried through a hosted API first; a GPU is rented only if code must not leave our control.
 - Activation: a new ADR that supersedes this one, on the owner's decision.
 
 ## Consequences (შედეგები)

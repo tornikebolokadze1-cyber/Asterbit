@@ -27,7 +27,7 @@ After round 2, offer 3–5 ideas the owner did not mention: a simpler v1, a risk
 
 ## Close
 1. Fill every section. Unknowns go to "Open questions" — never invent answers.
-2. Run the `auditor` subagent (gate: intent) on the file. Fix what it locates with evidence; at most 2 rounds.
+2. Run the `auditor` subagent (gate: intent) on the file, then the review loop per CLAUDE.md (loop id `gate-intent`): fix only what it locates with evidence — two fix rounds and a final review at most, then the owner decides what is left.
 3. Give the owner a short Georgian summary plus the auditor's verdict and ask for explicit approval.
 4. On approval: front matter `status: accepted`, `accepted: <date>`; docs/sdlc-state.md → phase 1 `approved` (who, when) + a gate-log line; commit `docs(intent): accept <title>`.
 5. Tell the owner the next step: `/sdlc-architecture`.

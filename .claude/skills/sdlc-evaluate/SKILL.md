@@ -10,11 +10,11 @@ Read `sdlc/design/evals-and-gates.md` first — it holds the option menu and the
 1. From docs/spec.md list what must be proven: every acceptance criterion and every success criterion from the intent.
 2. For each item propose the cheapest reliable check, deterministic before model-judged: unit/integration test → end-to-end or screenshot check → contract/schema check → static gate (lint, types, secrets, dependencies) → model-graded eval (only when behaviour cannot be checked deterministically, e.g. an agent's answers).
 3. Present the menu to the owner grouped by layer, with cost and benefit in plain Georgian (AskUserQuestion, recommendation first). The owner picks.
-4. Record the choice as an ADR ("evaluation strategy") and add the gate tasks to the plan.
-5. Drill every new gate: a clean control passes, a seeded defect fails with a non-zero exit. An undrilled gate is not evidence.
+4. Record the choice as an ADR ("evaluation strategy"), write the deterministic gates to `docs/gates.json` (format in `sdlc/checks/run_gates.py`: id, layer, command as a list, and a `count_pattern` wherever "0 tests ran" could look green), and add the gate tasks to the plan.
+5. Drill every new gate: a clean control passes, a seeded defect fails with a non-zero exit. An undrilled gate is not evidence. Also ask of every test or eval: would it pass on clearly wrong output? If yes, it does not discriminate — strengthen it.
 
 ## Run mode
-1. Run all gates through the single check command, then the eval suite.
+1. Run `python3 sdlc/checks/run_gates.py` (exit 0 = every gate PASS, 1 = a gate FAILED, 2 = inconclusive), then the eval suite.
 2. Report pass / fail per gate with the literal output lines. "Inconclusive" (could not run) is reported separately and never counts as pass.
 3. A failing gate blocks the milestone or release. Fix the code, not the gate.
 

@@ -18,16 +18,17 @@ SHA = ("a1b2c3d", "b2c3d4e", "c3d4e5f", "d4e5f60")
 
 
 def tracked_copy(dst: Path) -> Path:
-    """A hermetic copy: only files git tracks (with their working-tree content) plus .git.
+    """A hermetic copy: only files git tracks (with their working-tree content) in a fresh repository.
 
-    Untracked work in progress or a local .env never leaks into a drill.
+    Untracked work in progress or a local .env never leaks into a drill, and it works from a
+    git worktree too (there .git is a file, not a folder).
     """
     files = subprocess.run(["git", "-C", str(ROOT), "ls-files", "--cached"], capture_output=True, text=True, check=True).stdout
     for rel in files.splitlines():
         if (ROOT / rel).is_file():
             (dst / rel).parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(ROOT / rel, dst / rel)
-    shutil.copytree(ROOT / ".git", dst / ".git")
+    subprocess.run(["git", "init", "-q", str(dst)], check=True)
     return dst
 
 
@@ -148,6 +149,81 @@ def drill_artifact_checks(drill, scratch: Path) -> None:
                       empty.returncode == 1 and "no FR-n/NFR-n requirement found" in empty.stdout and "unknown status 'final'" in empty.stdout)
 
 
+def script(name: str, *args: str) -> subprocess.CompletedProcess:
+    return subprocess.run([sys.executable, str(CHECKS / name), *args], capture_output=True, text=True, timeout=60)
+
+
+def drill_memory_hygiene(drill, scratch: Path) -> None:
+    gate, project = "memory_hygiene", scratch / "hygiene"
+    (project / "memory/episodic/handoffs").mkdir(parents=True)
+    (project / "docs/decisions").mkdir(parents=True)
+    subprocess.run(["git", "init", "-q", str(project)], check=True)
+    handoff = project / "memory/episodic/handoffs/2026-10-01-abcd1234.md"
+    handoff.write_text("---\nupdated: 2026-10-01T10:00:00Z\n---\n# Handoff\n", encoding="utf-8")
+    clean = script("memory_hygiene.py", str(project), "--today", "2026-10-03")
+    drill.expect_clean(gate, "clean control: a 2-day-old handoff, nothing else → exit 0", clean.returncode == 0)
+    (project / "docs/decisions/0009-x.md").write_text("---\nstatus: accepted\nreview_by: 2026-10-02\n---\n", encoding="utf-8")
+    (project / "app.py").write_text("x = 1  # " + "asterbit" + "-debt: naive loop · limit: 10k rows\n", encoding="utf-8")
+    seeded = script("memory_hygiene.py", str(project), "--today", "2026-10-20")
+    drill.expect_bool(gate, "stale handoff, overdue ADR review and a debt marker without revisit all listed (exit 3)",
+                      seeded.returncode == 3 and "archive" in seeded.stdout and "0009-x.md" in seeded.stdout and "app.py:1" in seeded.stdout)
+
+
+LESSONS_HEAD = "| Date | What went wrong | Rule | Kind | Check that guards it | In CLAUDE.md? |\n|---|---|---|---|---|---|\n"
+
+
+def drill_lessons(drill, scratch: Path) -> None:
+    gate, table = "lessons_graduate", scratch / "lessons.md"
+    table.write_text(LESSONS_HEAD + "| 2026-10-01 | Commit swept runtime state | Stage explicit paths | mechanical | guard blocks it | No |\n"
+                     "| 2026-10-02 | Answer was too technical | Gloss every term | judgement | — | No |\n", encoding="utf-8")
+    clean = script("lessons_graduate.py", str(table))
+    drill.expect_clean(gate, "clean control: unrelated lessons, mechanical one already checked → exit 0", clean.returncode == 0)
+    table.write_text(table.read_text(encoding="utf-8")
+                     + "| 2026-10-05 | Commit swept runtime state again | Stage explicit paths only | mechanical | none | No |\n", encoding="utf-8")
+    seeded = script("lessons_graduate.py", str(table))
+    drill.expect_bool(gate, "lesson repeated on two dates + mechanical lesson without a check → both proposed (exit 3)",
+                      seeded.returncode == 3 and "promote to CLAUDE.md" in seeded.stdout and "build a check" in seeded.stdout)
+    missing = script("lessons_graduate.py", str(scratch / "no-lessons.md"))
+    drill.expect_bool(gate, "missing lessons file → INCONCLUSIVE (exit 2)", missing.returncode == 2 and "INCONCLUSIVE" in missing.stdout)
+
+
+def gate(gate_id: str, code: str, count: bool = False) -> dict:
+    entry = {"id": gate_id, "command": [sys.executable, "-c", code]}
+    return {**entry, "count_pattern": r"(\d+) passed"} if count else entry
+
+
+def drill_run_gates(drill, scratch: Path) -> None:
+    name, gates = "run_gates", scratch / "gates.json"
+    def run(*entries: dict) -> subprocess.CompletedProcess:
+        gates.write_text(json.dumps(list(entries)), encoding="utf-8")
+        return script("run_gates.py", "--gates", str(gates))
+    clean = run(gate("ok", "print('7 passed')", count=True), gate("lint", "pass"))
+    drill.expect_clean(name, "clean control: counted gate + plain gate → PASS (exit 0)", clean.returncode == 0 and "PASS" in clean.stdout)
+    zero = run(gate("ok", "print('0 passed')", count=True))
+    drill.expect_bool(name, "'0 passed' → INCONCLUSIVE, never green (exit 2)", zero.returncode == 2 and "INCONCLUSIVE" in zero.stdout)
+    failed = run(gate("ok", "print('3 passed')", count=True), gate("broken", "import sys; sys.exit(4)"))
+    drill.expect_bool(name, "a failing gate → FAIL (exit 1)", failed.returncode == 1 and "FAIL " in failed.stdout)
+    none = script("run_gates.py", "--gates", str(scratch / "no-gates.json"))
+    drill.expect_bool(name, "no gates file → INCONCLUSIVE (exit 2)", none.returncode == 2 and "INCONCLUSIVE" in none.stdout)
+
+
+def drill_agent_report(drill, scratch: Path) -> None:
+    name, logs = "agent_report", scratch / "logs"
+    logs.mkdir()
+    empty = script("agent_report.py", "--logs", str(logs))
+    drill.expect_bool(name, "empty log → INCONCLUSIVE (exit 2), never 'nothing happened'", empty.returncode == 2 and "INCONCLUSIVE" in empty.stdout)
+    events = [{"session": "s1", "agent": "main", "tool": "Edit", "summary": "src/a.py", "outcome": "ok"},
+              {"session": "s1", "agent": "auditor", "tool": "Bash", "summary": "git diff", "outcome": "failed"}]
+    (logs / "events-2026-10-07.jsonl").write_text("".join(json.dumps(e) + "\n" for e in events), encoding="utf-8")
+    full = script("agent_report.py", "--logs", str(logs))
+    drill.expect_clean(name, "clean control: two events → counts, the failure and the changed file reported",
+                       full.returncode == 0 and "2 tool calls" in full.stdout and "1 failed" in full.stdout and "src/a.py" in full.stdout)
+
+
 def drill_engine_checks(drill, scratch: Path) -> None:
     drill_review_rounds(drill, scratch)
     drill_artifact_checks(drill, scratch)
+    drill_memory_hygiene(drill, scratch)
+    drill_lessons(drill, scratch)
+    drill_run_gates(drill, scratch)
+    drill_agent_report(drill, scratch)
