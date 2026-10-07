@@ -22,6 +22,7 @@
 - [ ] Start the real product: `/sdlc-intent`
 
 ## Parked (გადადებული)
+- [ ] **Security gap, owner's yes needed (found 2026-10-07):** `.claude/hooks/commit_secrets.py` scans the repository of the session's `cwd`, not the one a command switches to — `cd <other repo> && git commit …` or `git -C <dir> commit …` is not scanned (ADR-0005 hook). Seen while committing from a git worktree; the commits were then scanned by hand (gitleaks 3 commits, built-in patterns: no leaks). Fix: resolve the target directory from `cd`/`-C` in the command, plus drill cases
 - [ ] Flaky drill case (found 2026-10-07): `commit_secrets` "generic key only gitleaks knows" MISSED in 1 of 4 local runs, so CI can turn red at random. Likely cause UNVERIFIED: the random value can hit a gitleaks stopword or entropy limit. Fix: a deterministic high-entropy value assembled at run time, then 20 repeated runs
 - [ ] Auditor LOW (ENG-v2-P1P2 review 1): requirements in `docs/changes/<n>/` are traced against the root `tasks/todo.md`, so a change's requirement can look traced by an unrelated product task with the same ID — use a change-local todo or prefixed IDs when the first change folder appears
 - [ ] Auditor note (ENG-v2-P1P2 review 1): `review_rounds.py` checks SHA format only, not that the commits exist or that base is an ancestor of head — add a `git merge-base --is-ancestor` check if a wrong range is ever recorded

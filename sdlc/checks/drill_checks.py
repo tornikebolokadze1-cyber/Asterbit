@@ -151,6 +151,12 @@ def drill_artifact_checks(drill, scratch: Path) -> None:
     callout = subprocess.run(check, capture_output=True, text=True, timeout=120)
     drill.expect_bool(gate, "open question hidden in an Obsidian callout of an approved PRD → reported",
                       callout.returncode == 1 and "docs/prd.md: approved but still has [NEEDS CLARIFICATION]" in callout.stdout)
+    for label, line in (("an unfilled placeholder outside the guidance", "Currency: [NEEDS CLARIFICATION: <question>]"),
+                        ("a lower-case marker", "Currency: [needs clarification: GEL or USD?]")):
+        (copy / "docs/prd.md").write_text(PRD + f"\n{line}\n", encoding="utf-8")
+        variant = subprocess.run(check, capture_output=True, text=True, timeout=120)
+        drill.expect_bool(gate, f"approved PRD with {label} → reported",
+                          variant.returncode == 1 and "docs/prd.md: approved but still has [NEEDS CLARIFICATION]" in variant.stdout)
 
 
 def script(name: str, *args: str) -> subprocess.CompletedProcess:

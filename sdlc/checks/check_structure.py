@@ -30,7 +30,7 @@ NAMED_PATH = re.compile(
 )
 LINK = re.compile(r"\]\(([^)\s]+)\)")
 CLARIFY = "[NEEDS CLARIFICATION"
-CLARIFY_PLACEHOLDER = "[NEEDS CLARIFICATION: <question>]"  # the templates' own guidance — the only exemption
+CLARIFY_PLACEHOLDER = "[NEEDS CLARIFICATION: <question>]"  # exempt only on template guidance lines (">")
 DONE_STATUSES = {"approved", "accepted"}
 KNOWN_STATUSES = DONE_STATUSES | {"draft", "rejected"}
 ARTIFACTS = ("intent", "prd", "trd", "spec", "plan")
@@ -171,8 +171,9 @@ def check_artifacts(root: Path, report: Report) -> None:
             report.check(status in KNOWN_STATUSES, f"{docs[name].relative_to(root)}: unknown status '{status}' — artifact checks cannot run")
         approved = {name for name, status in statuses.items() if status in DONE_STATUSES}
         for name in sorted(approved):
-            text = docs[name].read_text(encoding="utf-8").replace(CLARIFY_PLACEHOLDER, "")
-            report.check(CLARIFY not in text,
+            lines = docs[name].read_text(encoding="utf-8").splitlines()
+            text = "\n".join(l.replace(CLARIFY_PLACEHOLDER, "") if l.lstrip().startswith(">") else l for l in lines)
+            report.check(CLARIFY.lower() not in text.lower(),
                          f"{docs[name].relative_to(root)}: approved but still has {CLARIFY}]")
         if "prd" in approved:
             report.check(bool(FEATURE_ROW.search("\n".join(content_lines(docs["prd"])))),
