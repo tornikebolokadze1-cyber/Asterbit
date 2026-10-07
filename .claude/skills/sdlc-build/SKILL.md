@@ -15,17 +15,17 @@ description: Phase 6 — implement tasks/todo.md with the build loop (test first
 Gate: phase 5 `approved`. Work on a branch `feat/<milestone>`, never on main. Set phase 6 to `in-progress`.
 
 ## The task loop — once per task
-1. Take the first unchecked task in tasks/todo.md and re-read its proof. Record `BASE=$(git rev-parse HEAD)` before you change anything.
+1. Take the first unchecked task in tasks/todo.md and re-read its proof. For a `[high-risk]` task, write its base into the task line before you change anything (`· base: <git rev-parse --short HEAD>`) — shell variables do not survive between commands or a compaction.
 2. RED — write the failing test (or the screenshot check for UI). Run it and confirm it fails for the expected reason. Technique: Superpowers `test-driven-development`.
 3. GREEN — write the minimal code that passes. Reuse before you write: is it needed, does it already exist here, does the standard library do it? Every changed line must trace to the task.
 4. CHECK — run the project's single check command (tests + lint + types). Iterate. After 3 failed fix attempts on the same check: stop, explain in Georgian, ask. Technique for failures: Superpowers `systematic-debugging`.
 5. IMPROVE — simplify if needed, then re-run CHECK. A deliberate shortcut gets an `asterbit-debt: <what> · limit: <when it breaks> · revisit: <trigger>` comment; never a silent one.
-6. If the task is tagged `[high-risk]`: run the review loop on `BASE..HEAD` with loop id `<milestone>-<task>` before you tick it.
+6. If the task is tagged `[high-risk]`: run the review loop on `<base from the task line>..HEAD` with loop id `<milestone>-<task>` before you tick it.
 7. RECORD — tick the task with evidence (command + result line). If you deviated from docs/plan.md, add a line to its Deviation log in the same commit.
 8. COMMIT — conventional commit on the branch.
 
 ## The review loop — Sonnet ↔ Opus, exactly two fix rounds
-Runs at the end of every milestone (loop id `<milestone>`, range from the milestone's first BASE) and on every `[high-risk]` task. Rounds are counted by the ledger, never from memory:
+Runs at the end of every milestone (loop id `<milestone>`, review 1 range `$(git merge-base main HEAD)..HEAD` on the branch `feat/<milestone>`, which can be recomputed at any time) and on every `[high-risk]` task. Reviews 2 and 3 cover exactly the fix: base = the previous review's head, head = the fix commit — the ledger refuses any other range. Rounds are counted by the ledger, never from memory:
 
 ```bash
 python3 sdlc/checks/review_rounds.py status <loop>          # 3 = continue (prints the next step) · 0 = closed · 1 = to the owner · 2 = ledger unreadable
@@ -38,7 +38,8 @@ python3 sdlc/checks/review_rounds.py fix <loop> --head <HEAD>
 3. Fix 1 — fix only what the auditor located with evidence, run CHECK, commit, record `fix`.
 4. Review 2 — `auditor` in re-review mode with the previous findings: ADDRESSED / NOT ADDRESSED, plus the fix diff only. Record it.
 5. Fix 2, then review 3 (final), recorded the same way.
-6. When `status` exits 1 — findings remain after the final review, or HIGH+MEDIUM did not fall between two reviews — stop. Report to the owner in Georgian: what remains, why, and the options. Mark the milestone UNVERIFIED until the owner decides. Never start a third fix round.
+6. When `status` exits 1 — findings remain after the final review, or HIGH+MEDIUM did not fall between two reviews — stop. Report to the owner in Georgian: what remains, why, and the options. Mark the milestone UNVERIFIED until the owner decides. Never start a third fix round. If the owner asks for more work, it is a new loop with a new id (`<id>-r2`).
+7. `status` exit 2 means the ledger is unreadable or malformed: stop and report it — never guess the round.
 
 ## The milestone gate — after the last task of a milestone
 1. `verifier` runs the milestone proof in a fresh context.

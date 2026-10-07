@@ -31,9 +31,12 @@ NAMED_PATH = re.compile(
 LINK = re.compile(r"\]\(([^)\s]+)\)")
 CLARIFY = "[NEEDS CLARIFICATION"
 DONE_STATUSES = {"approved", "accepted"}
+KNOWN_STATUSES = DONE_STATUSES | {"draft", "rejected"}
 ARTIFACTS = ("intent", "prd", "trd", "spec", "plan")
-MUST_FEATURE = re.compile(r"^\|\s*(P-\d+)\s*\|.*\|\s*must\s*\|", re.M | re.I)
-REQUIREMENT = re.compile(r"^- (N?FR-\d+)\b", re.M)
+# Tolerant of bold, indentation, numbered lists and table cells; a format the regex misses fails loudly below.
+FEATURE_ROW = re.compile(r"^\s*\|\s*\**(P-\d+)\b", re.M)
+MUST_FEATURE = re.compile(r"^\s*\|\s*\**(P-\d+)\**\s*\|.*\|\s*\**must(?:[- ]have)?\**\s*\|", re.M | re.I)
+REQUIREMENT = re.compile(r"^\s*(?:[-*+]|\d+[.)]|\|)\s*\**(N?FR-\d+)\b", re.M)
 
 
 class Report:
@@ -48,8 +51,10 @@ class Report:
             self.defects.append(message)
 
 
-def front_matter(path: Path) -> dict[str, str] | None:
-    match = re.match(r"^---\n(.*?)\n---\n", path.read_text(encoding="utf-8"), re.S)
+def front_matter(path: Path | str) -> dict[str, str] | None:
+    """Fields between the opening --- lines; accepts a file path or the text itself."""
+    text = path if isinstance(path, str) else path.read_text(encoding="utf-8")
+    match = re.match(r"^---\n(.*?)\n---\n", text, re.S)
     if not match:
         return None
     fields: dict[str, str] = {}
@@ -134,27 +139,51 @@ def check_settings(root: Path, report: Report) -> None:
                     report.check((root / script).exists(), f"settings.json hook script missing: {script}")
 
 
-def check_trace(root: Path, source: Path, pattern: re.Pattern, targets: list[Path], what: str, report: Report) -> None:
-    """Every ID the pattern finds in the source must appear in at least one target (spec-kit 'analyze', made deterministic)."""
-    haystack = "\n".join(t.read_text(encoding="utf-8") for t in targets if t.exists())
-    for item in sorted(set(pattern.findall(source.read_text(encoding="utf-8")))):
+def status_of(path: Path) -> str:
+    raw = (front_matter(path.read_bytes().decode("utf-8").replace("\r\n", "\n").replace("\r", "\n")) or {}).get("status", "")
+    return re.sub(r"\s#.*$", "", raw).strip().strip("'\"").lower()
+
+
+def content_lines(path: Path) -> list[str]:
+    """Lines that carry content: template guidance sits in '>' blockquotes and is skipped."""
+    return [line for line in path.read_text(encoding="utf-8").splitlines() if not line.lstrip().startswith(">")]
+
+
+def check_trace(root: Path, source: Path, pattern: re.Pattern, haystack: str, target: str, what: str, report: Report) -> None:
+    """Every ID the pattern finds in the source must appear in the target text (spec-kit 'analyze', made deterministic)."""
+    for item in sorted(set(pattern.findall("\n".join(content_lines(source))))):
         report.check(re.search(rf"\b{re.escape(item)}\b", haystack) is not None,
-                     f"{source.relative_to(root)}: {what} {item} reaches no {' / '.join(t.name for t in targets)}")
+                     f"{source.relative_to(root)}: {what} {item} reaches no {target}")
 
 
 def check_artifacts(root: Path, report: Report) -> None:
-    """Approved artifacts carry no open [NEEDS CLARIFICATION] and stay traced down the chain (ADR-0006)."""
+    """Approved artifacts carry no open [NEEDS CLARIFICATION] and stay traced down the chain (ADR-0006).
+
+    A trace that finds nothing to check is a defect, never a silent pass.
+    """
     folders = [root / "docs", *sorted(p for p in (root / "docs/changes").glob("*") if p.is_dir())]
     for folder in folders:
-        docs = {name: folder / f"{name}.md" for name in ARTIFACTS}
-        approved = {n for n, p in docs.items() if p.exists() and (front_matter(p) or {}).get("status") in DONE_STATUSES}
+        docs = {name: folder / f"{name}.md" for name in ARTIFACTS if (folder / f"{name}.md").exists()}
+        statuses = {name: status_of(path) for name, path in docs.items()}
+        for name, status in statuses.items():
+            report.check(status in KNOWN_STATUSES, f"{docs[name].relative_to(root)}: unknown status '{status}' — artifact checks cannot run")
+        approved = {name for name, status in statuses.items() if status in DONE_STATUSES}
         for name in sorted(approved):
-            report.check(CLARIFY not in docs[name].read_text(encoding="utf-8"),
+            report.check(not any(CLARIFY in line for line in content_lines(docs[name])),
                          f"{docs[name].relative_to(root)}: approved but still has {CLARIFY}]")
+        if "prd" in approved:
+            report.check(bool(FEATURE_ROW.search("\n".join(content_lines(docs["prd"])))),
+                         f"{docs['prd'].relative_to(root)}: approved but no P-n feature row found — the trace proves nothing")
+        if "spec" in approved:
+            report.check(bool(REQUIREMENT.search("\n".join(content_lines(docs["spec"])))),
+                         f"{docs['spec'].relative_to(root)}: approved but no FR-n/NFR-n requirement found — the trace proves nothing")
         if {"prd", "spec"} <= approved:
-            check_trace(root, docs["prd"], MUST_FEATURE, [docs["spec"]], "must-priority feature", report)
+            requirement_lines = "\n".join(l for l in content_lines(docs["spec"]) if REQUIREMENT.match(l))
+            check_trace(root, docs["prd"], MUST_FEATURE, requirement_lines, "requirement line in spec.md", "must-priority feature", report)
         if {"spec", "plan"} <= approved:
-            check_trace(root, docs["spec"], REQUIREMENT, [docs["plan"], root / "tasks/todo.md"], "requirement", report)
+            todo = root / "tasks/todo.md"
+            haystack = "\n".join(content_lines(docs["plan"]) + (content_lines(todo) if todo.exists() else []))
+            check_trace(root, docs["spec"], REQUIREMENT, haystack, "plan.md / todo.md", "requirement", report)
 
 
 def run(root: Path) -> int:
