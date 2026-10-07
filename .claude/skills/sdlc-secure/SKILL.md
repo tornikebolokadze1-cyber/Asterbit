@@ -12,7 +12,7 @@ Read `sdlc/design/ai-security.md` first — it holds the layer model and the thr
 3. Implement the controls.
 4. Run `/security-review` on the diff plus a secret and dependency scan; fix HIGH and CRITICAL findings.
 5. Drill every control: a clean control passes, a seeded attack is stopped. Record both outputs.
-6. Record the security posture as an ADR; `auditor` (gate: security); owner approval → phase 8 `approved` + a gate-log line.
+6. Record the security posture as an ADR; `auditor` (gate: security — review loop per CLAUDE.md, loop id `gate-secure`); owner approval → phase 8 `approved` + a gate-log line.
 
 ## Done when
 Every catalogued threat has a control with a passing drill, or an explicit risk acceptance signed by the owner, and the scans show no open HIGH or CRITICAL finding.

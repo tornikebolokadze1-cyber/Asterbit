@@ -15,7 +15,7 @@ Gate: phase 3 `approved`. Read docs/intent.md, docs/prd.md, docs/trd.md, the acc
 3. Walk the owner through the concerns and markers one at a time (AskUserQuestion, recommendation first). Record each outcome — resolved or parked — in the spec.
 4. Traceability: every success metric of the PRD → at least one requirement → a planned check; every must-priority feature (P-n) → at least one FR. Missing links are concerns too.
 5. Reader test: a fresh `general-purpose` subagent (model sonnet) reads ONLY docs/spec.md, changes no file, and answers 5–10 questions a builder would ask. Fix every wrong or "not stated" answer.
-6. Run the `auditor` (gate: spec): testability, traceability, unverified assumptions, no marker left.
+6. Run the `auditor` (gate: spec — review loop per CLAUDE.md, loop id `gate-spec`): testability, traceability, unverified assumptions, no marker left.
 7. Owner approval → `status: approved`, phase 4 `approved` + a gate-log line, commit `docs(spec): approve`.
 8. Next steps: `/sdlc-evaluate` in design mode (choose the gates and evals for this spec), then `/sdlc-plan`.
 

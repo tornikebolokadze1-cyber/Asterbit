@@ -27,7 +27,7 @@ Specify, ready to paste into docs/spec.md: tool allowlist; data it may read and 
 For every blocking hook or deny rule: a clean control that passes and a seeded violation that is blocked (exit code 2 or a deny). Paste both outputs into the ADR's Verification section.
 
 ## Close
-`auditor` (gate: harness) → owner approval → phase 3 `approved` + a gate-log line → commit. Next step: `/sdlc-spec`.
+`auditor` (gate: harness — review loop per CLAUDE.md, loop id `gate-harness`) → owner approval → phase 3 `approved` + a gate-log line → commit. Next step: `/sdlc-spec`.
 
 ## Done when
 Settings and hooks are committed, every blocking control has a recorded drill, and the ADR explains each choice in plain language.

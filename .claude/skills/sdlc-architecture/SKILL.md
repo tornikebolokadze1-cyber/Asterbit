@@ -32,7 +32,7 @@ Derive the list from the intent and the PRD — typically: product form and plat
 
 ## 5. Close
 1. Write the one-paragraph architecture overview in docs/decisions/README.md (what we build with and why); add a mermaid diagram if it helps the owner see the parts.
-2. Run the `auditor` (gate: architecture) on docs/prd.md, the new ADRs and docs/trd.md: consistency with the intent, unverified claims, missing decisions, reader tests recorded, no marker left.
+2. Run the `auditor` (gate: architecture — review loop per CLAUDE.md, loop id `gate-architecture`) on docs/prd.md, the new ADRs and docs/trd.md: consistency with the intent, unverified claims, missing decisions, reader tests recorded, no marker left.
 3. Owner approval → docs/prd.md and docs/trd.md `status: approved`, phase 2 `approved` + a gate-log line; commit `docs(architecture): approve PRD, ADRs NNNN–MMMM and TRD`.
 4. Next step: `/sdlc-harness`.
 
