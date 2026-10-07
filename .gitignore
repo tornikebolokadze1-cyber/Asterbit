@@ -22,6 +22,8 @@ secrets/
 # Raw handoffs written by the GLOBAL PreCompact/PostCompact hook (~/.claude/hooks/active/precompact-wrap.sh).
 # The engine consolidates them into memory/ (ADR-0004), so the raw copies stay out of git.
 .claude/handoff-*.md
+# Agent event log and context-monitor state (ADR-0006) — per machine, may hold paths and commands
+.claude/logs/
 
 # Runtime state written by plugins (oh-my-claudecode) — changes constantly, never project content
 .omc/
