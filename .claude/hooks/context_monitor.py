@@ -8,7 +8,10 @@ cannot silently break this monitor. From MARGIN tokens before that point, Claude
 is asked — once per STEP-token band — to write a checkpoint into this session's
 single handoff file, the same file memory_handoff.py replaces at compaction.
 If the use cannot be measured, Claude is told so once per session; the monitor
-never blocks a tool.
+never blocks a tool. A subagent's tool call is skipped: it shares the parent's
+session id (the live event log showed agent_type "auditor" with the parent's
+session), so it would spend the main session's reminder band on an agent that
+cannot write the checkpoint.
 """
 from __future__ import annotations
 
@@ -42,7 +45,7 @@ def context_tokens(transcript: Path) -> int:
             usage = (json.loads(line).get("message") or {}).get("usage")
         except (json.JSONDecodeError, AttributeError):
             continue
-        if usage:
+        if isinstance(usage, dict) and usage:
             return sum(int(usage.get(k) or 0) for k in ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens"))
     raise ValueError("no token usage found in the transcript tail")
 
@@ -58,7 +61,7 @@ def decide(project: Path, event: dict, state: dict) -> str:
     try:
         point = compaction_point(project)
         used = context_tokens(Path(event.get("transcript_path", "")))
-    except (OSError, ValueError, KeyError, TypeError) as error:
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
         if state.get("unmeasured"):
             return ""
         state["unmeasured"] = True
@@ -78,6 +81,8 @@ def decide(project: Path, event: dict, state: dict) -> str:
 
 def main() -> int:
     event = json.load(sys.stdin)
+    if event.get("agent_id") or event.get("agent_type"):
+        return 0                    # a subagent's call: the reminder belongs to the main session
     project = Path(os.environ.get("CLAUDE_PROJECT_DIR") or event.get("cwd") or os.getcwd())
     state_file = project / f".claude/logs/context-monitor-{session_key(event.get('session_id', ''))}.json"
     state = json.loads(state_file.read_text(encoding="utf-8")) if state_file.exists() else {}

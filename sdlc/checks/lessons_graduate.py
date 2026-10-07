@@ -23,7 +23,7 @@ from pathlib import Path
 SIMILAR = 0.34
 STOP = {"that", "this", "with", "from", "were", "when", "then", "than", "into", "only", "every", "must",
         "should", "before", "after", "about", "their", "there", "which", "what", "keep", "file", "files"}
-NO_CHECK = re.compile(r"^\s*(?:—|-|none\b|no\b)|\bno (?:general )?check\b|\bnot yet\b", re.I)
+NO_CHECK = re.compile(r"^\s*(?:$|—|-|\?|none\b|no\b|n/?a\b|todo\b|tbd\b)|\bno (?:general )?check\b|\bnot yet\b", re.I)
 
 
 def words(text: str) -> set[str]:

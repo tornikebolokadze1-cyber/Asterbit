@@ -15,7 +15,7 @@ import re
 import secrets
 
 FENCE = "ASTERBIT-DATA"
-INVISIBLE = re.compile("[​-‏‪-‮⁠-⁤﻿\U000e0000-\U000e007f]")
+INVISIBLE = re.compile("[\u00ad\u180e\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufeff\U000e0000-\U000e007f]")
 PATTERNS: dict[str, re.Pattern[str]] = {
     "instruction override": re.compile(
         r"\b(?:ignore|disregard|forget|override)\b[^\n]{0,40}\b(?:previous|prior|above|earlier|all|your)\b"
@@ -24,7 +24,7 @@ PATTERNS: dict[str, re.Pattern[str]] = {
         r"\b(?:retain|keep|preserve|include|carry|repeat)\b[^\n]{0,40}\b(?:when|while|during|in|after)\b"
         r"[^\n]{0,20}\b(?:summari[sz]\w*|compact\w*|handoffs?)\b", re.I),
     "role spoofing": re.compile(r"(?:^\s*(?:system|developer)\s*:|<\s*/?\s*(?:system|instructions?)\s*>)", re.I | re.M),
-    "forged fence": re.compile(re.escape(FENCE)),
+    "forged fence": re.compile(r"<<<\s*(?:END\s+)?" + re.escape(FENCE)),  # the marker syntax, not the bare name in docs
 }
 
 

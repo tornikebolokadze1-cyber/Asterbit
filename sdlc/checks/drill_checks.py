@@ -193,6 +193,12 @@ def drill_lessons(drill, scratch: Path) -> None:
     seeded = script("lessons_graduate.py", str(table))
     drill.expect_bool(gate, "lesson repeated on two dates + mechanical lesson without a check → both proposed (exit 3)",
                       seeded.returncode == 3 and "promote to CLAUDE.md" in seeded.stdout and "build a check" in seeded.stdout)
+    table.write_text(LESSONS_HEAD + "| 2026-10-03 | Pushed from a dirty tree | Commit before push | mechanical |  | No |\n"
+                     "| 2026-10-04 | Port number drifted between files | Read the port from one config | mechanical | n/a | No |\n",
+                     encoding="utf-8")
+    blank = script("lessons_graduate.py", str(table))
+    drill.expect_bool(gate, "mechanical lessons with a blank and an 'n/a' Check cell → both proposed as checks (exit 3)",
+                      blank.returncode == 3 and "build a check (2026-10-03" in blank.stdout and "build a check (2026-10-04" in blank.stdout)
     missing = script("lessons_graduate.py", str(scratch / "no-lessons.md"))
     drill.expect_bool(gate, "missing lessons file → INCONCLUSIVE (exit 2)", missing.returncode == 2 and "INCONCLUSIVE" in missing.stdout)
 

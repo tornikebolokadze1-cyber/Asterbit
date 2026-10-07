@@ -7,7 +7,7 @@
 - **Phase:** 0 — Engine setup — IN PROGRESS (harness v0 `main`-შია — PR #2; ძრავა v2-ის ექვსივე პაკეტი აწყობილია: P1+P2 — PR #3, P3–P6 — PR #4; ორივე მფლობელის გაერთიანებას ელოდება)
 - **Branch:** `engine/v2` (PR #3) და `engine/v2-runtime` (PR #4, მოიცავს `engine/v2`-ს); `main`-ში PR-ებით შევა · **GitHub:** private repo `tornikebolokadze1-cyber/Asterbit` · **გუნდი:** მფლობელი + თანამშრომელი lashavamleti (წერის უფლება, მოწვევა მიღებულია)
 - **Decisions:** ADR-0004 accepted; ADR-0001…0003, ADR-0005 და ADR-0006 proposed
-- **Checks (2026-10-07, `engine/v2-runtime`, `sdlc/checks/`):** სტრუქტურა — 328 შემოწმება, PASS (77 ფაილი); წვრთნა — 126 შემთხვევა, ARMED (50 CAUGHT, 37 WORKS, 32 PASSED, 7 ASKED); „უმოქმედო" hook-ებით — DEAD (exit 1)
+- **Checks (2026-10-07, `engine/v2-runtime`, `sdlc/checks/`):** სტრუქტურა — 329 შემოწმება, PASS (77 ფაილი); წვრთნა — 131 შემთხვევა, ARMED (50 CAUGHT, 42 WORKS, 32 PASSED, 7 ASKED); „უმოქმედო" hook-ებით — DEAD (exit 1)
 - **Not built yet:** ნამდვილი `/compact`-ით hook-ის გამოცდა (მხოლოდ მფლობელს შეუძლია გაშვება); ძრავის საცდელი გაშვება
 
 ## Completed (დასრულებული)

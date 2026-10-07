@@ -3,8 +3,11 @@
 
 Writes .claude/logs/events-<date>.jsonl (not in git). Each line: time, session,
 event, agent, tool, a short summary of the input (command, file path, pattern…)
-and the outcome. Tool input is untrusted data: secrets are redacted, invisible
-characters stripped and the summary cut to 200 characters. The hook never
+and the outcome. Tool input is untrusted data: known provider tokens and generic
+credentials (Bearer / Authorization values, password=… style assignments,
+user:password@ in URLs) are redacted, invisible characters stripped and the
+summary cut to 200 characters. Other secret shapes can still get through, so a
+secret never belongs in a command. The hook never
 blocks a tool; if it cannot write, it says so on stderr.
 Known limit: calls the guard blocks never reach PostToolUse, so they are not here.
 """
@@ -13,6 +16,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -24,13 +28,28 @@ from untrusted import strip_invisible  # noqa: E402
 MARKER = "ASTERBIT-EVENT-LOG"
 MAX_SUMMARY = 200
 SUMMARY_FIELDS = ("command", "file_path", "notebook_path", "pattern", "url", "query", "subagent_type", "description")
+HIDDEN = "[REDACTED credential]"
+# Generic credential shapes, used only here: widening secret_patterns would change the commit scan (ADR-0005).
+CREDENTIALS = (
+    (re.compile(r"(?i)(\bauthorization\s*[:=]\s*(?:(?:basic|bearer|token)\s+)?)([^\s'\"]+)"), rf"\1{HIDDEN}"),
+    (re.compile(r"(?i)(\bbearer\s+)(?!\[REDACTED)([^\s'\"]+)"), rf"\1{HIDDEN}"),
+    (re.compile(r"(?i)(\b[\w.-]*(?:pass(?:word)?|passwd|pwd|secret|token|api[_-]?key)[\w.-]*\s*[=:]\s*['\"]?)(?!\[REDACTED)([^\s'\"&]+)"),
+     rf"\1{HIDDEN}"),
+    (re.compile(r"(://[^/\s:@]+:)([^/\s@]+)(@)"), rf"\1{HIDDEN}\3"),
+)
+
+
+def redact_credentials(text: str) -> str:
+    for pattern, replacement in CREDENTIALS:
+        text = pattern.sub(replacement, text)
+    return text
 
 
 def summarise(tool_input: object) -> str:
     if not isinstance(tool_input, dict):
         return ""
     value = next((str(tool_input[k]) for k in SUMMARY_FIELDS if tool_input.get(k)), "")
-    return strip_invisible(redact(value)).replace("\n", " ")[:MAX_SUMMARY]
+    return strip_invisible(redact_credentials(redact(value))).replace("\n", " ")[:MAX_SUMMARY]
 
 
 def main() -> int:
