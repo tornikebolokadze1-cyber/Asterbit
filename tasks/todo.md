@@ -16,10 +16,21 @@
 - [x] Harness v0 (ADR-0005): .claude/settings.json + guard / commit-secrets / memory hooks — drill 89 cases ARMED, stub DEAD; live: `.env.probe` write and verifier `touch` blocked (2026-10-07)
 - [x] Structure check in the repo (`sdlc/checks/check_structure.py`) — 269 checks PASS; seeded copy: 3/3 defects caught (now a drill case)
 - [x] CI: `.github/workflows/checks.yml` (structure, drill, stub drill, gitleaks) — green on PR #2, all 7 steps ran (https://github.com/tornikebolokadze1-cyber/Asterbit/actions/runs/37601321945)
-- [ ] Live `/compact` → handoff appears in memory/episodic/handoffs/ (hook logic drilled with synthetic input only)
-- [ ] Owner reviews ADR-0001…0003, ADR-0005 and PROCESS.md → accepted (Phase 0 gate, after the dry run)
+- [x] Live compaction → handoff appears in memory/episodic/handoffs/ — proven 2026-10-07 23:00 by a real auto compaction: the checkpoint went to `memory/archive/handoffs/2026-10-07-df3e2417.v2.md`, the new live handoff has `compaction: 3` and `injection_flags:`, SessionStart re-injected memory inside a nonce fence. Found on the way: subagent compactions overwrite it (A2)
+- [x] Research of Anthropic's current guidance + independent engine assessment (2026-10-08): `sdlc/research/anthropic-guidance-2026-10.md`, `claude-models-2026-10.md`, `engine-assessment-2026-10.md` (auditor: "READY FOR DRY RUN: no — 6 blocking items"); ADR-0007 proposed
+- [ ] Owner chooses ADR-0007's roles (A / B / C) and what happens to the Codex plugin
+- [ ] Owner reviews ADR-0001…0003, ADR-0005, ADR-0006, ADR-0007 and PROCESS.md → accepted (Phase 0 gate, after the dry run)
 - [ ] Engine dry run (new session): expense calculator web page, phases 1–6, branch `dryrun/expense-calculator` never merged, every gate exercised with approvals marked DRY-RUN (owner's choice 2026-10-07)
 - [ ] Start the real product: `/sdlc-intent`
+
+## Before the dry run (auditor, 2026-10-08 — details in `sdlc/research/engine-assessment-2026-10.md`)
+> Hook, settings and CLAUDE.md changes need the owner's yes (CLAUDE.md Safety).
+- [ ] A1 (HIGH) Dry-run rule in CLAUDE.md and PROCESS.md: on `dryrun/*`, phases 1–6 run while Phase 0 is in progress; approvals `owner (DRY-RUN), <date>`; Phase 3 proposes a settings diff but does not change the live `.claude/`; the branch is never merged
+- [ ] A2 (HIGH) `memory_handoff.py`: a subagent's compaction must not replace the main session's handoff (log the PostCompact input keys once to confirm `agent_id`); drill case
+- [ ] A3 (MEDIUM) `memory_context.py`: on `compact` skip the handoff (the summary is already in context); on `startup` pick the newest by time, not by file name; drill cases
+- [ ] A4 (MEDIUM) `context_monitor.py` and `agent_report.py`: measure the last `usage.iterations` item of type `message`; de-duplicate by `message.id`; drill with an advisor-shaped line
+- [ ] A5 (MEDIUM) `check_structure.py`: do not link-check `memory/episodic/**` and `memory/archive/**`; drill case
+- [ ] A6 (MEDIUM) Before the run: `claude update` (≥ 2.1.293, owner's yes), a new session without `/model`, then record `/status` (model, version) and `/tasks` (subagent models) in PROGRESS.md
 
 ## Parked (გადადებული)
 - [ ] **Security gap, owner's yes needed (found 2026-10-07):** `.claude/hooks/commit_secrets.py` scans the repository of the session's `cwd`, not the one a command switches to — `cd <other repo> && git commit …` or `git -C <dir> commit …` is not scanned (ADR-0005 hook). Seen while committing from a git worktree; the commits were then scanned by hand (gitleaks 3 commits, built-in patterns: no leaks). Fix: resolve the target directory from `cd`/`-C` in the command, plus drill cases
@@ -32,7 +43,8 @@
 - [ ] Auditor LOWs (ENG-v2-P3P6 review 1), parked: `run_gates.py` reports a bad gate config (invalid regex, missing group, unreadable file) as FAIL (exit 1) instead of INCONCLUSIVE; `agent_report.py` turns the whole report INCONCLUSIVE on one corrupt log line and prints "context now 0" when a transcript has no usage; `memory_handoff.py` archives a hand-written checkpoint as a version, so the first real compaction reads `compaction: 2`
 - [ ] Auditor LOW (ENG-v2-P3P6 review 2), parked: `context_monitor.py` skips any event with `agent_type`; if Claude Code also sets it on the main thread of a `claude --agent <name>` session (unverified), the monitor would stay silent there — `agent_id` alone marks a subagent. Verify against real hook input before changing; the project sets no `agent` today
 - [ ] Observation (ENG-v2-P3P6 review 2, owner's yes needed — ADR-0005 hook): `guard.py` blocks the read-only `git stash list` for read-only agents ("a git command that changes the repo")
-- [ ] Terminal CLI `~/.local/bin/claude` is 2.1.92; the VS Code extension bundles 2.1.289 — update the CLI (owner's call)
+- [ ] Claude Code is 2.1.292 here, both the terminal CLI and the VS Code extension (checked 2026-10-07); 2.1.293 adds Haiku 5.5 and fixes Claude misreading its own pre-compaction actions — see A6 (owner's call)
+- [ ] Auditor recommendations B1–B11 (2026-10-08), not blocking — `sdlc/research/engine-assessment-2026-10.md`. B4 is the `commit_secrets` item above; B10 (`AGENT_MODELS` allows only Opus and Sonnet) becomes blocking if the owner picks ADR-0007 option B or C
 - [ ] Global UserPromptSubmit hook calls MemPalace, but the package is not installed → fails silently on every prompt (owner's call; global config)
 
 ## Done log

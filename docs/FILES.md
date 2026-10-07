@@ -64,6 +64,7 @@ Subagent (დამხმარე აგენტი) ცალკე Claude-�
 - [`decisions/0004-context-and-memory.md`](decisions/0004-context-and-memory.md) — მეხსიერების ინტერვიუს შედეგი: შეკუმშვა 65%-ზე, მოძრავი handoff, Obsidian, ჯერ grep და QMD ზღვარზე, ADR + git + wrap. `accepted`.
 - [`decisions/0005-harness-v0.md`](decisions/0005-harness-v0.md) — harness v0: დაბალანსებული ავტონომია, დამცავი hook-ები რეპოში (Python), ჩანაწერები 30 დღე, CI ყოველ PR-ზე, მფლობელის პრინციპები. `proposed`.
 - [`decisions/0006-engine-v2.md`](decisions/0006-engine-v2.md) — ძრავა v2: PRD და TRD Phase 2-ში, Sonnet↔Opus ციკლი ჟურნალით, მეხსიერება v2, თვითგანვითარება, კარიბჭეები და მოვლენების ჟურნალი, მეორე ეტაპის ჩანაწერები; კოდის გრაფი — კოდის გაჩენამდე გადადებულია. `proposed`.
+- [`decisions/0007-claude-only-orchestration.md`](decisions/0007-claude-only-orchestration.md) — მხოლოდ Claude-ის მოდელები (Fable 5.1, Opus 5.5, Sonnet 5.5, Haiku 5.5): ფასები, advisor-ის წყვილები, როლების სამი ვარიანტი (რეკომენდებულია B — auditor Fable 5.1-ზე), Haiku-ს დამხმარე `scout` და Codex-ის ჩაკეტვა ამ რეპოში; დამტკიცებისას ცვლის ADR-0003-ს. `proposed`.
 - [`changes/`](changes/) — ჯერ ცარიელია (`.gitkeep` ცარიელ საქაღალდეს git-ში ინახავს). გაშვების შემდეგ აქ ჩაიწერება ახალი იდეებისა და შესწორებების intent / spec / plan.
 
 ## `tasks/`
@@ -118,13 +119,16 @@ Subagent (დამხმარე აგენტი) ცალკე Claude-�
 - [`ai-security.md`](../sdlc/design/ai-security.md) — დაცვის 9 ფენა, საფრთხეების კატალოგი (OWASP LLM Top 10 + მეხსიერების მოწამვლა) კონტროლებით.
 - [`ai-observability.md`](../sdlc/design/ai-observability.md) — რა კითხვებზე უნდა ვპასუხობდეთ, ლოგის სქემა, საკონტროლო ზოლები და სამი ვარიანტი Phase 9-ისთვის.
 
-## `sdlc/research/` — 5 კვლევა
+## `sdlc/research/` — 8 კვლევა
 
 - [`playbook-notes.md`](../sdlc/research/playbook-notes.md) — Anthropic-ის „AI-native SDLC playbook"-ის შეჯამება საკუთარი სიტყვებით: მთავარი აზრი, ექვსი ეტაპი წრედ, პრაქტიკების ცხრილი ჩვენი სტატუსით.
 - [`engine-selection.md`](../sdlc/research/engine-selection.md) — ძრავის შერჩევა awesome-ai-pulse-georgia-ს კოლექციიდან: კრიტერიუმები, კანდიდატები, დასკვნა.
 - [`repo-study.md`](../sdlc/research/repo-study.md) — ცხრა რეპოს (Superpowers, Anthropic Skills, Spec Kit, Matt Pocock, Karpathy, Ponytail, GSD, AIWorkHub, Atlas) კოდის დონეზე შესწავლა: რა არის თითოეული სინამდვილეში, 18 რეკომენდებული ფრაგმენტი (F1–F18) ვერდიქტით, რას არ ვიღებთ და რატომ, უსაფრთხოების შენიშვნები და AI Pulse-ის ექვსი დამატებითი კანდიდატი.
 - [`models-gpu-graphs.md`](../sdlc/research/models-gpu-graphs.md) — ვებ-კვლევა (2026-10-07): typesafe.ai, ჩინური ღია მოდელები, GPU-ს ქირაობის პლატფორმები და ფასები, OpenAI-ის მოდელი შემმოწმებლად, ცოდნის გრაფის ინსტრუმენტები და ის, როგორ გავიგოთ კონტექსტის პროცენტი.
 - [`engine-v2-gaps.md`](../sdlc/research/engine-v2-gaps.md) — მფლობელის პრომპტის ყოველი პუნქტი ძრავის ახლანდელ მდგომარეობასთან შედარებით და ექვსი აწყობის პაკეტი (P1–P6): რას აკეთებს თითოეული, რომელ ფაილებს ეხება და რას სჭირდება მფლობელის „კი".
+- [`claude-models-2026-10.md`](../sdlc/research/claude-models-2026-10.md) — ვებ-კვლევა (2026-10-07) ოფიციალური Anthropic-ის გვერდებიდან: Fable 5.1, Opus 5.5, Sonnet 5.5, Haiku 5.5 (ID, ფასი, effort, Claude Code-ის მინიმალური ვერსია), მთავარი მოდელის არჩევის რიგი, advisor-ის წყვილები და ფასი, ქვეაგენტის `model`/`effort`, `opusplan`, `modelSettings` და `usage.iterations`-ის სწორი წაკითხვა; ბოლოს — რაც ვერ დადასტურდა.
+- [`anthropic-guidance-2026-10.md`](../sdlc/research/anthropic-guidance-2026-10.md) — ვებ-კვლევა (2026-10-07, 65 ოფიციალური გვერდი): Anthropic-ის მიმდინარე რჩევები AI-native SDLC-სა და Claude Code-ზე 241 პუნქტად (MUST / SHOULD / OPTIONAL, წყარო და თარიღი თითოეულთან, რა არის ახალი 2026-10-06-ის შემდეგ) 12 თემაზე: ეტაპები და კარიბჭეები, CLAUDE.md, კონტექსტი, hook-ები, ქვეაგენტები, skill-ები, უფლებები და sandbox, შემოწმების ჩვევები, evals, უსაფრთხოება, დაკვირვება, მოდელების ორკესტრაცია.
+- [`engine-assessment-2026-10.md`](../sdlc/research/engine-assessment-2026-10.md) — ძრავის დამოუკიდებელი შეფასება ამ რჩევებით (auditor, 2026-10-08, უცვლელად): 6 პუნქტი, რომელიც საცდელ გაშვებას ბლოკავს (A1–A6), 11 რეკომენდებული (B1–B11), 8 კითხვა, რომელსაც მხოლოდ საცდელი გაშვება უპასუხებს (C1–C8), რა უკვე შეესაბამება რჩევებს და რა უარვყავით; ბოლოს — მთავარი სესიის გადამოწმება.
 
 ## რა არ არის რეპოში
 
