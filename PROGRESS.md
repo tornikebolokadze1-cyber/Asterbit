@@ -4,11 +4,11 @@
 > ჟურნალი მხოლოდ ივსება: ძველი ჩანაწერები არ იცვლება. ფაილების როლები: [PROCESS.md](PROCESS.md) §4.
 
 ## Current State (მიმდინარე მდგომარეობა)
-- **Phase:** 0 — Engine setup — IN PROGRESS (ჩონჩხი `main`-შია საერთო საფუძვლად; ADR-0001…0003 და PROCESS.md დამტკიცებას ელოდება)
-- **Branch:** `main` (PR #1 გაერთიანდა merge commit-ით) · **GitHub:** private repo `tornikebolokadze1-cyber/Asterbit` · **გუნდი:** მფლობელი + თანამშრომელი lashavamleti (წერის უფლება)
-- **Decisions:** ADR-0004 accepted; ADR-0001…0003 proposed
-- **Checks (2026-10-07, ლოკალური სკრიპტები — რეპოში ჯერ არ დევს):** სტრუქტურა — 197 შემოწმება, PASS; `docs/FILES.md` 51 ფაილიდან 51-ს მოიცავს; ორივემ ჩადებული დეფექტი დაიჭირა (exit 1). Claude Code-მა 11-ივე `sdlc-*` ბრძანება აღმოაჩინა
-- **Not built yet:** `.claude/settings.json`, მეხსიერების hook-ები, სტრუქტურის შემოწმება რეპოში
+- **Phase:** 0 — Engine setup — IN PROGRESS (harness v0 აწყობილია branch-ზე `engine/v1`; შემდეგია საცდელი გაშვება და Phase 0-ის კარიბჭე)
+- **Branch:** `engine/v1` (`main`-ში PR-ით შევა) · **GitHub:** private repo `tornikebolokadze1-cyber/Asterbit` · **გუნდი:** მფლობელი + თანამშრომელი lashavamleti (წერის უფლება, მოწვევა მიღებულია)
+- **Decisions:** ADR-0004 accepted; ADR-0001…0003 და ADR-0005 proposed
+- **Checks (2026-10-07, რეპოში — `sdlc/checks/`):** სტრუქტურა — 269 შემოწმება, PASS (61 ფაილი); წვრთნა — 89 შემთხვევა, ARMED (50 ჩადებული დეფექტი დაიჭირა, 25 სუფთა მაგალითი გავიდა, 7 „იკითხე" შემთხვევა, 7 ფაილის/კონტექსტის შემოწმება, მათ შორის სტრუქტურის შემოწმება 3-დეფექტიან ასლზე); „უმოქმედო" hook-ებით — DEAD (exit 1)
+- **Not built yet:** ნამდვილი `/compact`-ით hook-ის გამოცდა; ძრავის საცდელი გაშვება
 
 ## Completed (დასრულებული)
 
@@ -46,13 +46,21 @@
 - მფლობელის გადაწყვეტილებით PR #1 `main`-ში merge commit-ით ერთიანდება, როგორც საერთო საფუძველი; ეს ADR-0001…0003-სა და PROCESS.md-ს არ ამტკიცებს — ისინი `proposed` რჩება. merge commit-ი ინარჩუნებს ამ ჟურნალში ნახსენებ ყველა commit-ს
 - private რეპოში `main`-ის დაცვა (branch protection) GitHub Pro-ს მოითხოვს (API: HTTP 403), ამიტომ „მხოლოდ PR-ით" ჯერ შეთანხმებაა და არა ტექნიკური აკრძალვა
 
+### 2026-10-07 — Phase 0.7: harness v0 (branch `engine/v1`)
+- მფლობელის გადაწყვეტილებები: დაბალანსებული ავტონომია; სესიების ჩანაწერები 30 დღე (ნაგულისხმევი, პარამეტრი არ იცვლება); handoff-ისა და შეჯამების რვა პრინციპი (Claude-ის შემოთავაზება); CI ყოველ PR-ზე → [ADR-0005](docs/decisions/0005-harness-v0.md) (proposed)
+- `.claude/settings.json`: Sonnet 5.5 high, Opus 5.5 advisor, `autoCompactWindow: 650000`, allow / ask / deny უფლებები; ჩაწერისთანავე advisor tool ამ სესიაში გამოჩნდა — ესე იგი, ის ამ ანგარიშზე მუშაობს
+- hook-ები `.claude/hooks/`-ში (Python, მხოლოდ სტანდარტული ბიბლიოთეკა): `guard.py`, `commit_secrets.py`, `secret_patterns.py`, `memory_handoff.py`, `memory_context.py`
+- შემოწმებები `sdlc/checks/`-ში: `check_structure.py`, `drill_hooks.py`; CI: `.github/workflows/checks.yml` (actions/checkout ზუსტ commit-ზე, gitleaks 8.30.1 checksum-ით)
+- ცოცხალი გამოცდა: საიდუმლო ფაილის (`.env.probe`) ჩაწერა პროექტის hook-მა დაბლოკა (ASTERBIT-GUARD); verifier აგენტის `touch` დაიბლოკა „read-only agent" შეტყობინებით და ფაილი არ შეიქმნა
+- დოკუმენტები: CLAUDE.md და PROCESS.md (push სამუშაო branch-ზე თავისუფლად, `main`-ში — არასდროს; hook-ები; შემოწმებები), CONTRIBUTING.md (Python 3, დაცვა), docs/FILES.md, README.md, `memory/README.md`-ში რვა პრინციპი, ADR-0002-ში Superpowers-ის შენიშვნა, `/sdlc-status` PROGRESS.md-საც კითხულობს
+- auditor-ის პირველმა შემოწმებამ harness ჩააჭრა (FAIL): `main`-ზე ყოფნისას `git push origin HEAD` არ იბლოკებოდა; პლუს რვა საშუალო ხარვეზი (`bash -c`-ში დამალული ბრძანება, commit ფაილის სახელით სკანირებას გვერდს უვლიდა, `switch -f`/`branch -D` უკითხავად, handoff-ის ფაილი CI-ს გააწითლებდა და სხვ.). ყველა გასწორდა და თითოეულს წვრთნის შემთხვევა დაემატა. მეორე რაუნდმა კიდევ ერთი გზა იპოვა (`git push origin 2>&1` — გადამისამართება branch-ის სახელად ითვლებოდა); გასწორდა და წვრთნით შემოწმდა. მესამე აუდიტი არ ჩატარებულა (ორი რაუნდის ლიმიტი), ამიტომ ბოლო გასწორებას მხოლოდ წვრთნა ადასტურებს
+- გზად: lashavamleti-მ მოწვევა მიიღო (2026-10-07, GitHub API: role `write`)
+
 ## In Progress (მიმდინარე)
-- lashavamleti-ს მიერ მოწვევის მიღება
-- შენი პრინციპები handoff-ისა და შეჯამებისთვის → `memory/README.md`
-- ADR-0001…0003-ისა და PROCESS.md-ის განხილვა და დამტკიცება (ADR-0002-ში ჩასამატებელია: თანამშრომლებისთვის Superpowers სურვილისამებრია)
+- `engine/v1` → PR → `main` (CI მწვანე უნდა იყოს; გაერთიანება — შენი თანხმობით)
 
 ## Next Steps (შემდეგი ნაბიჯები)
-1. harness v0 (ახალ branch-ზე): `.claude/settings.json` (Sonnet 5.5 high, Opus 5.5 advisor, `autoCompactWindow: 650000`, უფლებების საბაზისო სია) + გადაწყვეტილება `cleanupPeriodDays`-ზე + სტრუქტურის შემოწმება რეპოში (`sdlc/checks/`: სავალდებულო ფაილები, `docs/FILES.md`-ის სისრულე)
-2. მეხსიერების hook-ები (PostCompact → `memory/`, SessionStart → `now.md` + handoff) და მათი drill-ები
-3. ძრავის საცდელი გაშვება „სათამაშო" იდეაზე (ეტაპები 1–6)
+1. ძრავის საცდელი გაშვება „სათამაშო" იდეაზე (ეტაპები 1–6), ცალკე branch-ზე, რომელიც `main`-ში არ შევა; ნაპოვნი ხარვეზების გასწორება
+2. ნამდვილი `/compact`-ით მეხსიერების hook-ის გამოცდა (`memory/episodic/handoffs/`)
+3. Phase 0-ის კარიბჭე: auditor მთელ ძრავაზე → ADR-0001…0003, ADR-0005 და PROCESS.md-ის დამტკიცება
 4. ნამდვილი პროდუქტი: `/sdlc-intent`

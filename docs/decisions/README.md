@@ -18,6 +18,7 @@
 | [0002](0002-engine-base-native-plus-superpowers.md) | ძრავის საფუძველი: საკუთარი თხელი ძრავა + Superpowers-ის მეთოდები | engine | proposed | 2026-10-06 | — |
 | [0003](0003-model-orchestration-phase-1.md) | ორკესტრაცია, ეტაპი 1: Sonnet 5.5 კოდერი, Opus 5.5 მრჩეველი და აუდიტორი | engine | proposed | 2026-10-06 | — |
 | [0004](0004-context-and-memory.md) | კონტექსტი და მეხსიერება: შეკუმშვა 65%, Obsidian, grep → QMD, ADR + git + wrap | engine | accepted | 2026-10-06 | — |
+| [0005](0005-harness-v0.md) | Harness v0: დაბალანსებული ავტონომია, რეპოს hook-ები, ჩანაწერები 30 დღე, CI ყოველ PR-ზე | engine | proposed | 2026-10-07 | — |
 
 ## არქიტექტურის მოკლე აღწერა
 

@@ -5,22 +5,21 @@ phase: 0 — engine setup
 # Now — ახლანდელი მდგომარეობა
 
 ## სად ვართ
-ძრავა v0: ჩონჩხი `main`-შია საერთო საფუძვლად (PR #1, merge commit, 2026-10-07). ეს ADR-0001…0003-ისა და PROCESS.md-ის დამტკიცებას არ ნიშნავს. Claude Code-მა 11-ივე `sdlc-*` ბრძანება აღმოაჩინა.
+ძრავა v1: harness v0 აწყობილია branch-ზე `engine/v1` (ADR-0005, proposed): `.claude/settings.json`, დამცავი და მეხსიერების hook-ები, `sdlc/checks/`, CI. ჩონჩხი `main`-შია (PR #1). ADR-0001…0003, ADR-0005 და PROCESS.md Phase 0-ის კარიბჭეზე დამტკიცდება.
 
 ## გუნდი
 - მფლობელი ამტკიცებს კარიბჭეებს და `main`-ში გაერთიანებას.
-- თანამშრომელი lashavamleti მოწვეულია წერის უფლებით; მუშაობს საკუთარ branch-ზე და ცვლილებას PR-ით გვთავაზობს (`CONTRIBUTING.md`).
-- `main`-ის ტექნიკური დაცვა private რეპოში GitHub Pro-ს მოითხოვს — ახლა „მხოლოდ PR-ით" შეთანხმებაა.
+- თანამშრომელი lashavamleti (წერის უფლება, მოწვევა მიღებულია) მუშაობს საკუთარ branch-ზე, ცვლილებას PR-ით გვთავაზობს (`CONTRIBUTING.md`).
+- `main`-ის ტექნიკური დაცვა GitHub Pro-ს მოითხოვს — ახლა „მხოლოდ PR-ით" შეთანხმებაა; CI წითელ ნიშანს აჩვენებს, მაგრამ გაერთიანებას ვერ აჩერებს.
 
 ## მოქმედი გადაწყვეტილებები
-- ADR-0004 `accepted` (ინტერვიუ 2026-10-06): შეკუმშვა 65%; Obsidian vault; ჯერ grep, QMD — ზღვრის მიღწევისას; შეცვლილი აზრი = ADR + git + wrap-ის შემოწმება.
-- ADR-0001…0003 — `proposed`, მფლობელის განხილვას ელოდება.
-- ორკესტრაცია (ADR-0003): Sonnet 5.5 high — კოდერი; Opus 5.5 — advisor და auditor. პარამეტრები ჯერ არ არის ჩართული.
+- ADR-0004 `accepted`: შეკუმშვა 65%; Obsidian vault; ჯერ grep, QMD ზღვარზე; შეცვლილი აზრი = ADR + git + wrap.
+- ADR-0005 (proposed): დაბალანსებული ავტონომია (სამუშაო branch-ის push თავისით, `main` — არასდროს); ჩანაწერები 30 დღე; რვა პრინციპი `memory/README.md`-ში; CI ყოველ PR-ზე.
+- ADR-0003 (proposed, ჩართულია settings-ში): Sonnet 5.5 high — კოდერი; Opus 5.5 — advisor და auditor. advisor tool ამ ანგარიშზე მუშაობს (2026-10-07).
 
 ## ღია საკითხები
-- მფლობელის პრინციპები handoff-ისა და შეჯამებისთვის (`memory/README.md`).
-- ჩანაწერების შენახვის ვადა (`cleanupPeriodDays`, რეკომენდაცია 365).
-- harness v0: `.claude/settings.json` + მეხსიერების hook-ები + drill-ები + სტრუქტურის შემოწმება რეპოში.
+- ნამდვილი `/compact`-ით hook-ის გამოცდა.
+- lashavamleti-ს კომპიუტერი: hook-ებს `python3` სჭირდება (Windows-ზე Git Bash ან WSL).
 
 ## შემდეგი ნაბიჯი
-მფლობელი წერს პრინციპებს და განიხილავს ADR-0001…0003-ს → harness v0 ახალ branch-ზე.
+`engine/v1`-ის PR (CI მწვანე) → საცდელი გაშვება სათამაშო იდეაზე → Phase 0-ის კარიბჭე → `/sdlc-intent`.
