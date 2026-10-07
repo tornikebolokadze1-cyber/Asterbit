@@ -36,6 +36,8 @@ Phase add-ons (Codex plugin, Obsidian skills, SkillSpector, agentsview, memory t
 ## Rationale (რატომ)
 One source of truth and low context cost matter more for a solo, non-coding owner than breadth of features. Every part stays replaceable.
 
+Note added 2026-10-07 (still `proposed`): "No new installs" holds for the owner's machine. For collaborators Superpowers is optional — the repo lists its marketplace but does not enable it, and our skills name a technique only as a hint (CLAUDE.md, Methods; ADR-0005).
+
 ## Consequences (შედეგები)
 - Positive: clear, small, auditable engine.
 - Negative: skill quality depends on us → a dry run on a toy intent comes before the real product.

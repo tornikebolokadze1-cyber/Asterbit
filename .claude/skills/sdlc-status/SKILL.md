@@ -4,7 +4,7 @@ description: Show where the project stands in the SDLC — current phase, gate s
 ---
 # SDLC status
 
-1. Read `docs/sdlc-state.md`, `memory/now.md`, and the newest file in `memory/episodic/sessions/` (skip whatever does not exist yet).
+1. Read `docs/sdlc-state.md`, `memory/now.md`, the Current State / In Progress / Next Steps sections of `PROGRESS.md`, and the newest file in `memory/episodic/sessions/` (skip whatever does not exist yet).
 2. Run `git status --short` and `git log --oneline -5`.
 3. If the previous session has no summary in `memory/episodic/sessions/`, say so and offer to write it first (`/sdlc-wrap`).
 4. Reply in Georgian prose, at most ~12 lines, no table unless asked:

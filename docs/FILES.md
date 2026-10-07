@@ -15,11 +15,20 @@
 - [`.gitignore`](../.gitignore) — ფაილები, რომლებიც git-ში არასდროს უნდა მოხვდეს: საიდუმლოებები (`.env`, გასაღებები), კომპიუტერისა და რედაქტორის ნაგავი, Claude-ის პირადი ფაილები, შეკუმშვის ნედლი handoff-ები, plugin-ების დროებითი ფაილები (`.omc/`), Obsidian-ის ფანჯრების მდგომარეობა და მომავალი build-ის ნაგავი.
 - [`.obsidian/app.json`](../.obsidian/app.json) — Obsidian-ის ორი პარამეტრი: ახალი ბმულები ჩვეულებრივი markdown ფორმატით და ფარდობითი გზით იქმნება, ამიტომ ისინი Obsidian-ში, VS Code-სა და GitHub-ზე ერთნაირად მუშაობს.
 
+## `.claude/settings.json` და `.claude/hooks/` — Claude-ის წესები და დაცვა ([ADR-0005](decisions/0005-harness-v0.md))
+
+- [`.claude/settings.json`](../.claude/settings.json) — Claude Code-ის პროექტის პარამეტრები: მოდელი (Sonnet 5.5, high effort), მრჩეველი (Opus 5.5), შეკუმშვა 650 ათას ტოკენზე, უფლებები (რა შეიძლება თავისით, რაზე იკითხოს, რა აკრძალულია) და hook-ების ჩართვა. რეპოსთან ერთად ჩამოდის, ამიტომ ყველა კომპიუტერზე ერთნაირად მოქმედებს.
+- [`guard.py`](../.claude/hooks/guard.py) — ყოველი ბრძანებისა და ფაილის ჩაწერის წინ ამოწმებს და ბლოკავს: `rm -rf`, `git reset --hard`, `git clean -f`, force-push, `main`-ში push (`git push origin HEAD`-იც, თუ `main`-ზე ხარ), `--no-verify`, ისტორიის გადაწერა, საიდუმლო ფაილის ქსელით გაგზავნა ან ჩაწერა. იმ ბრძანებებზე, რომლებიც შეუნახავ სამუშაოს ან branch-ს შლის (`switch -f`, `restore`, `branch -D`, `stash drop`), ჯერ გკითხავს. `bash -c`-სა და `eval`-ში დამალულ ბრძანებასაც ამოწმებს. auditor-ს, verifier-სა და architect-ს ფაილების შეცვლას საერთოდ უკრძალავს. თუ თვითონ გაფუჭდა, ბლოკავს.
+- [`commit_secrets.py`](../.claude/hooks/commit_secrets.py) — Claude-ის ყოველ `git commit`-მდე staged ცვლილებებს საიდუმლოებებზე ამოწმებს (ჩაშენებული ნიმუშებით და, თუ დაყენებულია, gitleaks-ით) და წერს, რომელმა შემოწმებამ იმუშავა. ბლოკავს commit-ს, რომელიც ჯერ staged არ ყოფილ ცვლილებას შეიტანდა (`git add … && git commit`, `-a`, ფაილის სახელი), რადგან სკანირება მას ვერ დაინახავდა.
+- [`secret_patterns.py`](../.claude/hooks/secret_patterns.py) — საიდუმლოებების ნიმუშების საერთო სია (API გასაღებები, ტოკენები, პირადი გასაღებები, `.env`-ის ტიპის ფაილები), რომელსაც სხვა hook-ები იყენებს.
+- [`memory_handoff.py`](../.claude/hooks/memory_handoff.py) — შეკუმშვისას შეჯამებას ამ სესიის handoff-ად ინახავს `memory/episodic/handoffs/`-ში; წინა ვერსია `memory/archive/handoffs/`-ში გადადის; საიდუმლოების მსგავს მნიშვნელობებს ფარავს.
+- [`memory_context.py`](../.claude/hooks/memory_context.py) — სესიის დასაწყისში Claude-ს აწვდის `memory/now.md`-ს, `PROGRESS.md`-ის მიმდინარე მდგომარეობასა და შემდეგ ნაბიჯებს და ბოლო handoff-ს (მაქსიმუმ 12 000 სიმბოლო).
+
 ## `.claude/skills/` — 11 ბრძანება
 
 Skill (უნარი) არის საქაღალდე, რომელშიც `SKILL.md` დევს. ფაილის თავში ორ `---` ხაზს შორის სახელი და აღწერაა (front matter). აღწერის მიხედვით Claude თვითონ წყვეტს, როდის ჩატვირთოს skill; ადამიანსაც შეუძლია მისი გამოძახება `/სახელი`-თ. გამოძახებამდე კონტექსტში მხოლოდ მოკლე აღწერა დევს, ამიტომ skill-ები იაფია.
 
-- [`sdlc-status`](../.claude/skills/sdlc-status/SKILL.md) — „სად ვართ?": კითხულობს ფაზების ტაბლოს, `memory/now.md`-ს და ბოლო სესიის შეჯამებას, ამოწმებს git-ს და 12 ხაზში ამბობს მიმდინარე ეტაპს, ბოლო დამტკიცებას, რა აბრკოლებს შემდეგ კარიბჭეს და **ერთ** შემდეგ ნაბიჯს.
+- [`sdlc-status`](../.claude/skills/sdlc-status/SKILL.md) — „სად ვართ?": კითხულობს ფაზების ტაბლოს, `memory/now.md`-ს, `PROGRESS.md`-ს და ბოლო სესიის შეჯამებას, ამოწმებს git-ს და 12 ხაზში ამბობს მიმდინარე ეტაპს, ბოლო დამტკიცებას, რა აბრკოლებს შემდეგ კარიბჭეს და **ერთ** შემდეგ ნაბიჯს.
 - [`sdlc-intent`](../.claude/skills/sdlc-intent/SKILL.md) — Phase 1: იდეა `docs/intent.md`-ად იქცევა. ინტერვიუ რაუნდებად მიდის (მაქსიმუმ 4 კითხვა) შვიდ თემაზე; ბოლოს Claude 3–5 საკუთარ იდეას სთავაზობს, auditor ამოწმებს და მფლობელი ამტკიცებს.
 - [`sdlc-architecture`](../.claude/skills/sdlc-architecture/SKILL.md) — Phase 2: გადაწყვეტილებების სია (პლატფორმა, ენა, მონაცემები, hosting, AI მოდელი…). თითოეულზე `architect` 2–3 შემოწმებულ ვარიანტს ამზადებს, მფლობელი ირჩევს, Claude ADR-ს წერს.
 - [`sdlc-harness`](../.claude/skills/sdlc-harness/SKILL.md) — Phase 3: ავტონომიის დონე, უფლებები (allow / ask / deny), დაცული ფაილები, hook-ები, მეხსიერების პარამეტრები; თუ პროდუქტი აგენტია, იგივე თავად აგენტისთვისაც. ყოველი დამბლოკავი წესი საცდელად მოწმდება. აქ შეიქმნება `.claude/settings.json`.
@@ -48,7 +57,8 @@ Subagent (დამხმარე აგენტი) ცალკე Claude-�
 - [`decisions/0002-engine-base-native-plus-superpowers.md`](decisions/0002-engine-base-native-plus-superpowers.md) — რაზე დგას ძრავა: საკუთარი თხელი ჩარჩო + Superpowers-ის მეთოდები; რატომ არა Spec Kit, BMAD ან GSD. `proposed`.
 - [`decisions/0003-model-orchestration-phase-1.md`](decisions/0003-model-orchestration-phase-1.md) — Sonnet 5.5 კოდერია, Opus 5.5 მრჩეველი და აუდიტორი; პარამეტრების ნიმუში ჯერ ჩართული არ არის; მეორე ეტაპი აღწერილია, მაგრამ არააქტიურია. `proposed`.
 - [`decisions/0004-context-and-memory.md`](decisions/0004-context-and-memory.md) — მეხსიერების ინტერვიუს შედეგი: შეკუმშვა 65%-ზე, მოძრავი handoff, Obsidian, ჯერ grep და QMD ზღვარზე, ADR + git + wrap. `accepted`.
-- [`changes/`](changes/.gitkeep) — ჯერ ცარიელია (`.gitkeep` ცარიელ საქაღალდეს git-ში ინახავს). გაშვების შემდეგ აქ ჩაიწერება ახალი იდეებისა და შესწორებების intent / spec / plan.
+- [`decisions/0005-harness-v0.md`](decisions/0005-harness-v0.md) — harness v0: დაბალანსებული ავტონომია, დამცავი hook-ები რეპოში (Python), ჩანაწერები 30 დღე, CI ყოველ PR-ზე, მფლობელის პრინციპები. `proposed`.
+- [`changes/`](changes/) — ჯერ ცარიელია (`.gitkeep` ცარიელ საქაღალდეს git-ში ინახავს). გაშვების შემდეგ აქ ჩაიწერება ახალი იდეებისა და შესწორებების intent / spec / plan.
 
 ## `tasks/`
 
@@ -57,12 +67,21 @@ Subagent (დამხმარე აგენტი) ცალკე Claude-�
 
 ## `memory/` — მეხსიერების ფენები
 
-- [`README.md`](../memory/README.md) — მეხსიერების რუკა: სად რა იწერება და რა არ შეიძლება იქ ჩაიწეროს; აქვეა ადგილი მფლობელის პრინციპებისთვის handoff-ისა და შეჯამებისთვის.
+- [`README.md`](../memory/README.md) — მეხსიერების რუკა: სად რა იწერება და რა არ შეიძლება იქ ჩაიწეროს; აქვეა მფლობელის რვა პრინციპი handoff-ისა და შეჯამებისთვის.
 - [`now.md`](../memory/now.md) — ახლანდელი მდგომარეობა, მაქსიმუმ 120 ხაზი. სესიის დასაწყისში იკითხება, `/sdlc-wrap` აახლებს.
-- [`episodic/handoffs/`](../memory/episodic/handoffs/.gitkeep) — სესიის მოძრავი handoff (შეკუმშვის წინ ჩაწერილი გადაცემის ჩანაწერი).
-- [`episodic/sessions/`](../memory/episodic/sessions/.gitkeep) — სესიების შეჯამებები.
-- [`semantic/`](../memory/semantic/.gitkeep) — მყარი ფაქტები და თვის დაიჯესტები.
-- [`archive/`](../memory/archive/.gitkeep) — ძველი ვერსიები; არასდროს იშლება.
+- [`episodic/handoffs/`](../memory/episodic/handoffs/) — სესიის მოძრავი handoff (შეკუმშვის წინ ჩაწერილი გადაცემის ჩანაწერი).
+- [`episodic/sessions/`](../memory/episodic/sessions/) — სესიების შეჯამებები.
+- [`semantic/`](../memory/semantic/) — მყარი ფაქტები და თვის დაიჯესტები.
+- [`archive/`](../memory/archive/) — ძველი ვერსიები; არასდროს იშლება. `archive/handoffs/` პირველი განმეორებითი შეკუმშვისას თავისით შეიქმნება.
+
+## `sdlc/checks/` — ძრავის შემოწმებები
+
+- [`check_structure.py`](../sdlc/checks/check_structure.py) — ამოწმებს, რომ სავალდებულო ფაილები არსებობს, skill-ებსა და აგენტებს სწორი front matter აქვთ, ყველა ბმული მუშაობს, `settings.json` სწორია და მის hook-ებს ფაილი აქვთ, `docs/FILES.md` კი ყველა ფაილს ჩამოთვლის. Exit 0 — PASS, 1 — ხარვეზი, 2 — ვერ შემოწმდა.
+- [`drill_hooks.py`](../sdlc/checks/drill_hooks.py) — თითოეულ hook-სა და სტრუქტურის შემოწმებას „წვრთნის" (89 შემთხვევა): სუფთა მაგალითები უნდა გავიდეს, განზრახ ჩადებული შეცდომები უნდა დაიჭიროს, „იკითხე" ბრძანებებზე კი კითხვა უნდა დასვას (ARMED). `ASTERBIT_DRILL_STUB=1`-ით hook-ებს „უმოქმედოთი" ცვლის და მაშინ შედეგი DEAD უნდა იყოს — ასე მტკიცდება, რომ თავად გამოცდას ჩავარდნა შეუძლია.
+
+## `.github/workflows/` — ავტომატური შემოწმება GitHub-ზე (CI)
+
+- [`checks.yml`](../.github/workflows/checks.yml) — ყოველ PR-ზე და `main`-ში ყოველ push-ზე GitHub უშვებს სტრუქტურის შემოწმებას, hook-ების წვრთნას (ჩვეულებრივს და „უმოქმედოს") და gitleaks-ით მთელი ისტორიის სკანირებას. ხელსაწყოები ზუსტ ვერსიაზეა დაფიქსირებული და gitleaks checksum-ით მოწმდება.
 
 ## `sdlc/templates/` — 7 თარგი
 
@@ -91,12 +110,13 @@ Subagent (დამხმარე აგენტი) ცალკე Claude-�
 
 ## რა არ არის რეპოში
 
-- **ჯერ არ შექმნილა:** `.claude/settings.json` და `.claude/hooks/` (harness v0), `docs/intent.md` / `spec.md` / `plan.md` (თავ-თავის ეტაპზე), პროდუქტის კოდი (Phase 6).
+- **ჯერ არ შექმნილა:** `docs/intent.md` / `spec.md` / `plan.md` (თავ-თავის ეტაპზე), პროდუქტის კოდი (Phase 6).
 - **განზრახ არ არის git-ში** (`.gitignore`): `.claude/settings.local.json`, `.claude/handoff-*.md`, `.omc/`, `.obsidian/workspace*.json`, საიდუმლოებები. ეს ფაილები შეიძლება შენს კომპიუტერზე გამოჩნდეს, მაგრამ პირადია.
 - **დამალული `.git/`** — git-ის ისტორიის ბაზა; მას ხელით არ ვეხებით.
 
 ## ცნობილი ხარვეზები
 
-- `/sdlc-status` `PROGRESS.md`-ს ჯერ არ კითხულობს — ერთი ხაზით სწორდება.
-- `auditor`-სა და `verifier`-ს ტესტების გასაშვებად ტერმინალი სჭირდებათ, ამიტომ ის, რომ ფაილებს არ ცვლიან, ჯერ მხოლოდ მათ ინსტრუქციაზე დგას; harness v0-ში hook-ით გამაგრდება.
-- სტრუქტურის შემოწმება (ფაილები, ბმულები, skill-ების front matter) ჯერ რეპოში არ დევს; harness v0-ში `sdlc/checks/`-ში გადმოვა და ამ რუკის სისრულესაც შეამოწმებს.
+- hook-ებს `python3` სჭირდება. თუ კომპიუტერზე არ არის, hook ვერ ჩაირთვება და Claude Code მხოლოდ შეცდომას აჩვენებს — დაცვა იმ კომპიუტერზე გამორთულია.
+- auditor-ის/verifier-ის „მხოლოდ კითხვა" ბრძანებების სიას ეყრდნობა: აშკარა ჩაწერას (`>`, `touch`, `rm`, `git commit`, `sed -i` …) ბლოკავს, მაგრამ პროგრამა, რომელიც შიგნიდან წერს ფაილს (მაგ. ტესტის ქეში), არ ჩანს.
+- შეკუმშვის hook-ის ლოგიკა გაწვრთნილია, მაგრამ ნამდვილი `/compact`-ით ჯერ არ გამოცდილა.
+- `main` GitHub-ზე ტექნიკურად დაცული არ არის (უფასო გეგმა): CI წითელ ნიშანს აჩვენებს, მაგრამ გაერთიანებას ვერ აჩერებს.

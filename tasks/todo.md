@@ -10,14 +10,15 @@
 - [x] Create the directory: CLAUDE.md, README.md, phase skills, subagents, templates, design docs, ADR-0001…0004
 - [x] PROCESS.md (working agreement) + PROGRESS.md (work log) — added 2026-10-06 after the owner noticed they were missing
 - [x] Memory & context interview → ADR-0004 accepted (2026-10-06: 65% · Obsidian vault · grep → QMD at trigger · ADR + git + wrap check)
-- [ ] Owner writes the handoff / session-summary principles → memory/README.md
+- [x] Handoff / session-summary principles → memory/README.md (owner chose Claude's eight principles, 2026-10-07)
 - [x] Collaborator access + standalone repo: lashavamleti invited with write access (GitHub invitation 2026-10-07); CONTRIBUTING.md, docs/FILES.md; CLAUDE.md/PROCESS.md People + Safety
 - [x] Scaffold merged into `main` as the shared base — PR #1, merge commit (owner's decision 2026-10-07)
-- [ ] Owner reviews ADR-0001…0003 and PROCESS.md → accepted
-- [ ] Harness v0: .claude/settings.json (models, effort, advisor, compaction window, permissions baseline) + memory hooks (PostCompact → memory/, SessionStart → now.md + handoff)
-- [ ] Structure check in the repo (`sdlc/checks/`): required files exist, front matter, links, docs/FILES.md lists every tracked file — drilled (clean control + seeded defects)
-- [ ] Drill every hook: clean control passes, seeded case fails
-- [ ] Engine dry run: a toy intent through phases 1–6, every gate exercised
+- [x] Harness v0 (ADR-0005): .claude/settings.json + guard / commit-secrets / memory hooks — drill 89 cases ARMED, stub DEAD; live: `.env.probe` write and verifier `touch` blocked (2026-10-07)
+- [x] Structure check in the repo (`sdlc/checks/check_structure.py`) — 269 checks PASS; seeded copy: 3/3 defects caught (now a drill case)
+- [x] CI: `.github/workflows/checks.yml` (structure, drill, stub drill, gitleaks) — green on PR #2, all 7 steps ran (https://github.com/tornikebolokadze1-cyber/Asterbit/actions/runs/37601321945)
+- [ ] Live `/compact` → handoff appears in memory/episodic/handoffs/ (hook logic drilled with synthetic input only)
+- [ ] Owner reviews ADR-0001…0003, ADR-0005 and PROCESS.md → accepted (Phase 0 gate, after the dry run)
+- [ ] Engine dry run (new session): expense calculator web page, phases 1–6, branch `dryrun/expense-calculator` never merged, every gate exercised with approvals marked DRY-RUN (owner's choice 2026-10-07)
 - [ ] Start the real product: `/sdlc-intent`
 
 ## Parked (გადადებული)
@@ -29,3 +30,4 @@
 ## Done log
 - 2026-10-06 — repository initialised; branch `engine/v0-scaffold`.
 - 2026-10-07 — lashavamleti invited; repo made standalone; PR #1 merged into `main`.
+- 2026-10-07 — harness v0 built on `engine/v1` (ADR-0005); lashavamleti accepted the invitation.
