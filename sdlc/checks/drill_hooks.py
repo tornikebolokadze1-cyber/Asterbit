@@ -182,6 +182,15 @@ def drill_commit_elsewhere(drill: Drill, repo: Path) -> None:
                             (f"GIT_DIR={where}/.git git commit -m x", "GIT_DIR / GIT_WORK_TREE")):
         drill.expect(gate, f"cannot tell which folder → fails closed: {command}", run(command), True, reason)
     drill.expect(gate, "unknown folder but no commit", run('cd "$ELSEWHERE" && git status'), False, SECRETS_MARKER)
+    base, tree = repo.parent / "worktree-base", repo.parent / "worktree-linked"  # where the gap was first seen: a linked git worktree
+    subprocess.run(["git", "init", "-q", str(base)], check=True)
+    subprocess.run(["git", "-C", str(base), "-c", "user.name=drill", "-c", "user.email=drill@example.invalid",
+                    "commit", "-q", "--allow-empty", "-m", "base"], check=True)
+    subprocess.run(["git", "-C", str(base), "worktree", "add", "-q", "-b", "drill", str(tree)], check=True)
+    stage(tree, "config.txt", f"token = {fake_token()}\n")
+    proc = run(f"git -C {shlex.quote(str(tree))} commit -m x")
+    drill.expect(gate, "secret staged in a linked worktree", proc, True, LEAK_FOUND)
+    drill.expect_bool(gate, "  …and the worktree is the folder scanned", "worktree-linked" in proc.stderr)
     unstage(other, "config.txt")
     stage(other, "readme.md", "hello\n")
     stage(repo, "config.txt", f"token = {fake_token()}\n")  # now the secret is in the SESSION folder and the target is clean
