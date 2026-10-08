@@ -20,6 +20,7 @@ import json
 import os
 import re
 import secrets
+import shlex
 import shutil
 import string
 import subprocess
@@ -40,6 +41,7 @@ RM_RF = "rm " + "-rf"
 HARD = "--" + "hard"
 GUARD = "ASTERBIT-GUARD"
 SECRETS_MARKER = "ASTERBIT-SECRETS"
+LEAK_FOUND = SECRETS_MARKER + ": blocked — possible secret in the commit"
 
 
 def run_hook(script: str, event: dict | str, project_dir: Path | None = None) -> subprocess.CompletedProcess:
@@ -157,6 +159,49 @@ def unstage(repo: Path, name: str) -> None:
     subprocess.run(["git", "-C", str(repo), "reset", "-q", "--", name], check=True)
 
 
+def drill_commit_elsewhere(drill: Drill, repo: Path) -> None:
+    """A commit aimed at another folder (`git -C`, `cd`, `bash -c`) is scanned THERE, not in the session folder."""
+    gate = "commit_secrets"
+    other = repo.parent / "other-repo"
+    other.mkdir(exist_ok=True)
+    subprocess.run(["git", "init", "-q", str(other)], check=True)
+    where = shlex.quote(str(other))
+
+    def run(command: str) -> subprocess.CompletedProcess:
+        return run_hook("commit_secrets.py", bash_event(command, repo))
+
+    stage(other, "config.txt", f"token = {fake_token()}\n")  # the secret waits in the OTHER folder; the session folder is clean
+    for command in (f"git -C {where} commit -m x", "git -C ../other-repo commit -m x", f"cd {where} && git commit -m x",
+                    "cd ../other-repo && git commit -m x", f"bash -c 'cd {where} && git commit -m x'",
+                    f"(cd {where}); git commit -m x"):
+        proc = run(command)  # tied to the hook's OWN finding, not to a marker a crash would also print
+        drill.expect(gate, f"secret in another folder: {command}", proc, True, LEAK_FOUND)
+        drill.expect_bool(gate, f"  …and it names the other folder as the one scanned: {command}", "other-repo" in proc.stderr)
+    for command, reason in (('cd "$ELSEWHERE" && git commit -m x', "cannot tell which folder"),
+                            (f"git --git-dir={where}/.git commit -m x", "cannot tell which folder"),
+                            (f"GIT_DIR={where}/.git git commit -m x", "GIT_DIR / GIT_WORK_TREE")):
+        drill.expect(gate, f"cannot tell which folder → fails closed: {command}", run(command), True, reason)
+    drill.expect(gate, "unknown folder but no commit", run('cd "$ELSEWHERE" && git status'), False, SECRETS_MARKER)
+    base, tree = repo.parent / "worktree-base", repo.parent / "worktree-linked"  # where the gap was first seen: a linked git worktree
+    subprocess.run(["git", "init", "-q", str(base)], check=True)
+    subprocess.run(["git", "-C", str(base), "-c", "user.name=drill", "-c", "user.email=drill@example.invalid",
+                    "commit", "-q", "--allow-empty", "-m", "base"], check=True)
+    subprocess.run(["git", "-C", str(base), "worktree", "add", "-q", "-b", "drill", str(tree)], check=True)
+    stage(tree, "config.txt", f"token = {fake_token()}\n")
+    proc = run(f"git -C {shlex.quote(str(tree))} commit -m x")
+    drill.expect(gate, "secret staged in a linked worktree", proc, True, LEAK_FOUND)
+    drill.expect_bool(gate, "  …and the worktree is the folder scanned", "worktree-linked" in proc.stderr)
+    unstage(other, "config.txt")
+    stage(other, "readme.md", "hello\n")
+    stage(repo, "config.txt", f"token = {fake_token()}\n")  # now the secret is in the SESSION folder and the target is clean
+    for command in (f"git -C {where} commit -m x", f"cd {where} && git commit -m x"):
+        drill.expect(gate, f"clean target, secret only in the session folder: {command}", run(command), False, SECRETS_MARKER)
+    for command, reason in (("bash -c 'git commit -m x'", LEAK_FOUND),
+                            ("sh -c 'git add notes.md && git commit -m x'", "staged in the same command")):
+        drill.expect(gate, f"commit hidden in a shell string: {command}", run(command), True, reason)
+    unstage(repo, "config.txt")
+
+
 def drill_commit_secrets(drill: Drill, repo: Path) -> None:
     gate = "commit_secrets"
     commit = bash_event("git commit -m 'add notes'", repo)
@@ -177,6 +222,7 @@ def drill_commit_secrets(drill: Drill, repo: Path) -> None:
     outside = repo.parent / "not-a-repo"
     outside.mkdir(exist_ok=True)
     drill.expect(gate, "scan cannot run (not a repo) → fails closed", run_hook("commit_secrets.py", bash_event("git commit -m x", outside)), True, SECRETS_MARKER)
+    drill_commit_elsewhere(drill, repo)
     if shutil.which("gitleaks") is None:
         drill.add(gate, "SKIPPED", "gitleaks branch (gitleaks not installed here; CI installs it)")
         return
