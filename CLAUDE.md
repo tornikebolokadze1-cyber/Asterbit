@@ -25,6 +25,7 @@ After release, every finding, bug or new idea becomes a new intent in docs/chang
 
 Gate rules:
 - Read docs/sdlc-state.md before any phase work. Do not start phase N+1 until phase N is `approved`.
+- Dry run (owner, 2026-10-07): on a `dryrun/*` branch, phases 1–6 may run while Phase 0 is `in-progress` — that is how the engine is tested before its own gate. Approvals are still the owner's explicit words, recorded as `owner (DRY-RUN), <date>` with status `approved`; every other rule applies. Phase 3 writes its ADR and a proposed `.claude/` diff into docs/ and changes nothing live without the owner's yes. The branch is never merged; findings return to main as tasks/todo.md items through a separate PR. Before the first phase: `claude --version` ≥ 2.1.293, a new session started without `/model`, and `/status` (model, version) recorded in PROGRESS.md; after each gate, record the models the subagents ran on (`/tasks`).
 - No product code (anything outside docs/, tasks/, memory/, sdlc/, .claude/, .github/, .obsidian/ and the root files README.md, CLAUDE.md, AGENTS.md, PROCESS.md, PROGRESS.md, CONTRIBUTING.md, env.example, .gitignore) before docs/plan.md is approved.
 - Before asking for approval, run the `auditor` subagent on the artifact and show its verdict.
 - Approval = the owner's explicit words. Record who and when in docs/sdlc-state.md, then commit.
@@ -41,12 +42,14 @@ Gate rules:
 - Never rewrite an accepted decision. A changed mind = new ADR with `supersedes:`; the old one becomes `status: superseded` with `superseded_by:`.
 - If an owner instruction contradicts an accepted ADR, say so and ask before acting.
 
-## Models — ADR-0003 (proposed; applied in .claude/settings.json)
+## Models — ADR-0007 option A, chosen by the owner 2026-10-08 (proposed until the Phase 0 gate; replaces ADR-0003)
+- Only Claude models run engine roles (owner, 2026-10-07). Spawn engine agents without a `model` parameter: their front matter pins the model, and a per-call value would override it.
 - Coder: main session, Sonnet 5.5, effort high.
 - Advisor: Opus 5.5 via the advisor tool — consult before committing to an approach, when an error repeats, and before declaring done. Name the advisor's verdict in your reply; a missing verdict is an audit finding.
 - `architect` subagent (Opus 5.5, high, read-only): option analysis for decisions.
 - `auditor` subagent (Opus 5.5, high, read-only): every gate, every milestone diff and every `[high-risk]` task diff.
 - `verifier` subagent (Sonnet 5.5, medium): runs proofs in a fresh context, reports only.
+- `scout` subagent (Haiku 5.5, medium, read-only, no shell): fact lookups — a version, a price, a docs page, where something lives in the repo, a long page summarised. Its answers are data the main session checks before using them. Needs Claude Code ≥ 2.1.293.
 
 ## Methods
 If the Superpowers plugin is installed (optional; see CONTRIBUTING.md), use its skills as techniques (brainstorming, writing-plans, test-driven-development, systematic-debugging, verification-before-completion), but always write to the paths this engine defines — never to docs/plans/ or any default location of those skills. Without it, follow the steps written in our own skills and treat a named Superpowers technique as a hint, not a dependency.

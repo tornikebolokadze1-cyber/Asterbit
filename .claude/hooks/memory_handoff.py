@@ -9,6 +9,11 @@ like an injected instruction is flagged in the front matter (ADR-0006), not
 dropped. Missing input is reported, never written as a silent empty handoff.
 A checkpoint Claude writes before compaction (context_monitor.py) lives in the
 same file, so one session keeps one handoff.
+A subagent's compaction shares the parent's session id; it must not replace the
+session's handoff (seen live 2026-10-08: a research subagent's summary became
+the session's handoff twice), so it is skipped and only logged. Every PostCompact
+writes one line of input key names to .claude/logs/compactions.jsonl, so a real
+compaction shows which fields Claude Code sends.
 """
 from __future__ import annotations
 
@@ -39,13 +44,39 @@ def archive_previous(current: Path, archive_dir: Path) -> int:
     return versions + 1
 
 
+def is_subagent(event: dict) -> bool:
+    """agent_id, or a transcript under subagents/, marks a subagent. agent_type alone does not:
+    a `claude --agent` main thread may carry it too (tasks/todo.md)."""
+    return bool(event.get("agent_id")) or "/subagents/" in str(event.get("transcript_path") or "")
+
+
+def log_input(project: Path, event: dict, outcome: str) -> None:
+    """One line per PostCompact: outcome and input key names, never the summary itself."""
+    record = {"ts": f"{dt.datetime.now(dt.timezone.utc):%Y-%m-%dT%H:%M:%SZ}", "session": session_key(event.get("session_id", "")),
+              "outcome": outcome, "agent_type": event.get("agent_type"), "keys": sorted(event),
+              "transcript": Path(str(event.get("transcript_path") or "")).name}
+    try:
+        logs = project / ".claude/logs"
+        logs.mkdir(parents=True, exist_ok=True)
+        with (logs / "compactions.jsonl").open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(record) + "\n")
+    except OSError as error:
+        print(f"{MARKER}: compaction log not written ({error}).", file=sys.stderr)
+
+
 def main() -> int:
     event = json.load(sys.stdin)
+    project = Path(os.environ.get("CLAUDE_PROJECT_DIR") or event.get("cwd") or os.getcwd())
+    if is_subagent(event):
+        log_input(project, event, "skipped: subagent")
+        agent = event.get("agent_type") or "unknown agent"
+        print(json.dumps({"systemMessage": f"{MARKER}: a subagent's compaction ({agent}) — this session's handoff was left as it is."}))
+        return 0
     summary = (event.get("compact_summary") or "").strip()
     if not summary:
+        log_input(project, event, "error: no summary")
         print(f"{MARKER}: no compact_summary in the PostCompact input — handoff NOT saved.", file=sys.stderr)
         return 1
-    project = Path(os.environ.get("CLAUDE_PROJECT_DIR") or event.get("cwd") or os.getcwd())
     handoffs = project / "memory/episodic/handoffs"
     handoffs.mkdir(parents=True, exist_ok=True)
     key = session_key(event.get("session_id", ""))
@@ -65,6 +96,7 @@ def main() -> int:
         f"# Handoff — {now:%Y-%m-%d} · session {key}\n\n{warning}{body}\n",
         encoding="utf-8",
     )
+    log_input(project, event, "saved")
     note = f" ({redactions} secret-looking value(s) redacted)" if redactions else ""
     note += f" (flagged: {', '.join(flags)})" if flags else ""
     message = f"{MARKER}: handoff saved to {target.relative_to(project)} (compaction {previous_versions + 1}){note}."

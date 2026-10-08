@@ -21,14 +21,17 @@ REQUIRED_FILES = (
     "memory/README.md", "memory/now.md",
 )
 EXPECTED_SKILLS = 11
-EXPECTED_AGENTS = 3
-AGENT_MODELS = {"claude-opus-5-5", "claude-sonnet-5-5"}
+EXPECTED_AGENTS = 4
+AGENT_MODELS = {"claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5"}  # ADR-0007, option A
 EFFORTS = {"low", "medium", "high", "xhigh", "max"}
 NAMED_PATH = re.compile(
     r"(sdlc/(?:templates|design|checks)/[\w.-]+\.(?:md|py)|docs/sdlc-state\.md|"
     r"docs/decisions/README\.md|memory/(?:README|now)\.md|tasks/(?:todo|lessons)\.md)"
 )
 LINK = re.compile(r"\]\(([^)\s]+)\)")
+# Compaction summaries and archived handoffs are stored data that machines write, not pages we maintain:
+# a link example inside one is not a broken link (seen 2026-10-08, engine assessment A5).
+STORED_DATA = ("memory/episodic/", "memory/archive/")
 CLARIFY = "[NEEDS CLARIFICATION"
 CLARIFY_PLACEHOLDER = "[NEEDS CLARIFICATION: <question>]"  # exempt only on template guidance lines (">")
 DONE_STATUSES = {"approved", "accepted"}
@@ -103,7 +106,7 @@ def check_skills_and_agents(root: Path, report: Report) -> list[Path]:
 
 
 def check_links_and_file_map(root: Path, files: list[str], report: Report) -> None:
-    for rel in (f for f in files if f.endswith(".md")):
+    for rel in (f for f in files if f.endswith(".md") and not f.startswith(STORED_DATA)):
         page = root / rel
         for target in LINK.findall(page.read_text(encoding="utf-8")):
             if target.startswith(("http://", "https://", "#", "mailto:")):

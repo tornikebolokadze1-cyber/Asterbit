@@ -234,6 +234,15 @@ def drill_agent_report(drill, scratch: Path) -> None:
     full = script("agent_report.py", "--logs", str(logs))
     drill.expect_clean(name, "clean control: two events → counts, the failure and the changed file reported",
                        full.returncode == 0 and "2 tool calls" in full.stdout and "1 failed" in full.stdout and "src/a.py" in full.stdout)
+    main_round = {"type": "message", "input_tokens": 2, "cache_read_input_tokens": 299_998, "cache_creation_input_tokens": 0, "output_tokens": 100}
+    advisor = {"type": "advisor_message", "model": "claude-opus-5-5", "input_tokens": 300_000, "output_tokens": 900}
+    usage = {"input_tokens": 4, "cache_read_input_tokens": 599_996, "cache_creation_input_tokens": 0, "output_tokens": 200,
+             "iterations": [main_round, advisor, main_round]}
+    transcript = scratch / "advisor-transcript.jsonl"
+    transcript.write_text(2 * (json.dumps({"type": "assistant", "message": {"id": "msg_drill", "usage": usage}}) + "\n"), encoding="utf-8")
+    tokens = script("agent_report.py", "--logs", str(logs), "--transcript", str(transcript))
+    drill.expect_bool(name, "advisor turn written as two lines → context = last main-model round (300,000), output counted once (200)",
+                      tokens.returncode == 0 and "context now 300,000; output so far 200" in tokens.stdout)
 
 
 def drill_engine_checks(drill, scratch: Path) -> None:

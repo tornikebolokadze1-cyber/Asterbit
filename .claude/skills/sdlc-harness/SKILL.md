@@ -8,6 +8,7 @@ The harness is everything around a model that decides what it can see, touch and
 
 ## Before you start
 - Gate: phase 2 `approved`. Read the accepted ADRs — the chosen stack decides which commands are safe to pre-approve.
+- On a `dryrun/*` branch (CLAUDE.md, Dry run): write the ADR and the proposed `.claude/settings.json` / `.claude/hooks/*` changes as a diff in docs/, and change nothing live without the owner's yes.
 - Read sdlc/design/memory-and-context.md and ADR-0004: the engine-level memory mechanics are decided there; this phase only tunes them.
 - Read sdlc/design/ai-security.md, layers 1–3.
 
