@@ -4,11 +4,11 @@
 > ჟურნალი მხოლოდ ივსება: ძველი ჩანაწერები არ იცვლება. ფაილების როლები: [PROCESS.md](PROCESS.md) §4.
 
 ## Current State (მიმდინარე მდგომარეობა)
-- **Phase:** 0 — Engine setup — IN PROGRESS (ძრავა v1 და v2 `main`-შია — PR #2, #3, #4; `AGENTS.md` და `env.example` — PR #5)
-- **Branch:** `main` (`d1b66c7`); `engine/agents-env` — PR #5 · **GitHub:** private repo `tornikebolokadze1-cyber/Asterbit` · **გუნდი:** მფლობელი + თანამშრომელი lashavamleti (წერის უფლება, მოწვევა მიღებულია)
-- **Decisions:** ADR-0004 accepted; ADR-0001…0003, ADR-0005 და ADR-0006 proposed
-- **Checks (2026-10-07, `engine/v2-runtime` = `main`-ის v2 ნაწილი, `sdlc/checks/`):** სტრუქტურა — 329 შემოწმება, PASS (77 ფაილი); წვრთნა — 131 შემთხვევა, ARMED (50 CAUGHT, 42 WORKS, 32 PASSED, 7 ASKED); „უმოქმედო" hook-ებით — DEAD (exit 1)
-- **Not built yet:** ნამდვილი `/compact`-ით hook-ის გამოცდა (მხოლოდ მფლობელს შეუძლია გაშვება); ძრავის საცდელი გაშვება
+- **Phase:** 0 — Engine setup — IN PROGRESS (ძრავა v1 და v2, `AGENTS.md` და `env.example` `main`-შია — PR #2–#5)
+- **Branch:** `main` (`57af5db`); `engine/guidance-2026-10` — კვლევა, დამოუკიდებელი შეფასება და ADR-0007 · **GitHub:** private repo `tornikebolokadze1-cyber/Asterbit` · **გუნდი:** მფლობელი + თანამშრომელი lashavamleti (წერის უფლება, მოწვევა მიღებულია)
+- **Decisions:** ADR-0004 accepted; ADR-0001…0003, ADR-0005, ADR-0006 და ADR-0007 proposed
+- **Assessment (2026-10-08, auditor):** „READY FOR DRY RUN: no — 6 blocking items" — `tasks/todo.md` → „Before the dry run" (A1–A6)
+- **Not built yet:** A1–A6-ის გასწორება; ძრავის საცდელი გაშვება
 
 ## Completed (დასრულებული)
 
@@ -94,12 +94,21 @@
 - მფლობელმა იპოვა ორი ხარვეზი: არც `AGENTS.md` იყო (წესები Codex / GPT, Cursor, Kilo-სთვის — მათ `CLAUDE.md` არ წაუკითხავთ) და არც საიდუმლო პარამეტრების ნიმუში. ორივე დაემატა; `AGENTS.md` `check_structure.py`-ის სავალდებულო ფაილებშია
 - ნიმუში `env.example` ჰქვია და არა `.env.example`: პროექტის დაცვის წესი `Read(./.env.*)` Claude-ს `.env.example`-ის ჩაწერასაც უკრძალავს. მფლობელმა სახელის შეცვლა აირჩია, დაცვის წესი უცვლელია
 
+### 2026-10-08 — Phase 0.12: Anthropic-ის რჩევების კვლევა, ძრავის დამოუკიდებელი შეფასება, ADR-0007 (branch `engine/guidance-2026-10`)
+- მფლობელმა ითხოვა Anthropic-ის უახლესი SDLC-რჩევების სიღრმისეული კვლევა და ძრავის ობიექტური შეფასება. გზად შეასწორა: პირველი ორკესტრაცია მხოლოდ Claude-ის მოდელებით უნდა იყოს (Fable 5.1, Opus 5.5, Sonnet 5.5, Haiku 5.5), სხვა მოდელები სრულად გამოირიცხება
+- R1 (Sonnet, 65 ოფიციალური გვერდი) → `sdlc/research/anthropic-guidance-2026-10.md`, 241 პუნქტი; R2 (Sonnet) → `sdlc/research/claude-models-2026-10.md`. Haiku 5.5 ნამდვილია (`claude-haiku-5-5`), მაგრამ Claude Code ≥ 2.1.293-ს ითხოვს, აქ კი 2.1.292 დგას. მთავარი ფაქტები მთავარმა სესიამ თავადაც გადაამოწმა სამ ოფიციალურ გვერდზე (models overview, advisor, model-config)
+- auditor-მა (Opus, სუფთა კონტექსტი — ძრავის ავტორს საკუთარი ნამუშევარი არ შეუფასებია) დაწერა `sdlc/research/engine-assessment-2026-10.md`: „READY FOR DRY RUN: no — 6 blocking items" (A1–A6), 11 რეკომენდებული, 8 კითხვა საცდელი გაშვებისთვის. ADR-0007-ის ერთი რიცხვი გასწორდა (B11)
+- ADR-0007 (proposed): მხოლოდ Claude — მფლობელის გადაწყვეტილება; როლების სამი ვარიანტი, რეკომენდებულია B (auditor Fable 5.1-ზე); Haiku 5.5-ის `scout` `claude update`-ის შემდეგ; Codex-ის ჩაკეტვა ამ რეპოში. ყველაფერს მფლობელის „კი" სჭირდება; settings და აგენტები უცვლელია
+- ცოცხლად ნაპოვნი: (1) კონტექსტის მზომი advisor-იან ნაბიჯზე ორმაგად ითვლის (117% vs ნამდვილი ≈59%); (2) ქვეაგენტის (R1-ის) შეკუმშვამ ამ სესიის handoff-ი ორჯერ გადაწერა — ხელით აღდგა (ცოცხალი → `v5`, `v3` → ცოცხალი); (3) შეჯამებაში ჩაწერილმა ბმულის მაგალითმა სტრუქტურის შემოწმება ჩააგდო — `v5`-ში ერთი ჰარით გაუვნებელყოფილია; (4) `compact`-ზე SessionStart-მა წინა handoff-ი ჩატვირთა; (5) სესია Opus-ზე მუშაობდა, რადგან `/model` პროექტის პარამეტრს ჯობნის
+- ნამდვილი შეკუმშვის ჯაჭვი დამტკიცდა: 23:00-ზე checkpoint-ი არქივში გადავიდა (`v2`), ახალ handoff-ს `compaction: 3` და `injection_flags` აქვს, მეხსიერება nonce-იანი ღობით ჩაიტვირთა
+
 ## In Progress (მიმდინარე)
-- PR #5 (`AGENTS.md`, `env.example`) მფლობელის გაერთიანებას ელოდება
+- `engine/guidance-2026-10`-ის PR მფლობელის გადახედვას და გაერთიანებას ელოდება
+- მფლობელის არჩევანი: ADR-0007-ის როლები (A / B / C), Codex plugin-ის ბედი, A1–A6-ის გასწორების „კი"
 
 ## Next Steps (შემდეგი ნაბიჯები)
-1. მფლობელი: PR #5 `main`-ში; გადაწყვეტილება `commit_secrets`-ის ხარვეზზე (`tasks/todo.md`); ზედმეტი სამუშაო ასლის `~/Asterbit-runtime` წაშლა (მფლობელის თანხმობით)
-2. ნამდვილი `/compact`-ით მეხსიერების hook-ის გამოცდა (`memory/episodic/handoffs/`) — მფლობელი უშვებს `/compact`-ს, Claude ამოწმებს შედეგს
-3. ძრავის საცდელი გაშვება ახალ სესიაში: ხარჯების კალკულატორი (ვებგვერდი), ეტაპები 1–6, branch `dryrun/expense-calculator` (`main`-ში არ შევა), კარიბჭეები `DRY-RUN` ნიშნით (მფლობელის გადაწყვეტილება 2026-10-07); ნაპოვნი ხარვეზების გასწორება
-4. Phase 0-ის კარიბჭე: auditor მთელ ძრავაზე → ADR-0001…0003, ADR-0005, ADR-0006 და PROCESS.md-ის დამტკიცება
-5. ნამდვილი პროდუქტი: `/sdlc-intent`
+1. მფლობელი: როლები, Codex, A1–A6-ის „კი" (hook-ები და CLAUDE.md მისი თანხმობის გარეშე არ იცვლება)
+2. A1–A6-ის გასწორება მსუბუქი PR-ით (`check_structure.py`, hook-ების წვრთნა ARMED + stub DEAD, CI)
+3. `claude update` (≥ 2.1.293) → ახალი სესია `/model`-ის გარეშე → `/status`-ისა და `/tasks`-ის ჩანაწერი
+4. ძრავის საცდელი გაშვება: ხარჯების კალკულატორი, ეტაპები 1–6, branch `dryrun/expense-calculator` (`main`-ში არ შევა), დამტკიცებები `DRY-RUN` ნიშნით; C1–C8-ზე პასუხები
+5. Phase 0-ის კარიბჭე: auditor მთელ ძრავაზე → ADR-0001…0003, ADR-0005…0007 და PROCESS.md-ის დამტკიცება; მერე `/sdlc-intent`
