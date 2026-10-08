@@ -5,7 +5,7 @@
 
 ## Current State (მიმდინარე მდგომარეობა)
 - **Phase:** 0 — Engine setup — IN PROGRESS (ძრავა v1 და v2, `AGENTS.md`, `env.example`, A1–A6 და `commit_secrets`-ის გასწორება `main`-შია — PR #2–#8)
-- **Branch:** `main` (`566fd00`, PR #8); `engine/owner-decisions` — მფლობელის 2026-10-08-ის გადაწყვეტილებები და ძრავის გასწორებები · **GitHub:** private repo `tornikebolokadze1-cyber/Asterbit` · **გუნდი:** მფლობელი + თანამშრომელი lashavamleti (წერის უფლება, მოწვევა მიღებულია)
+- **Branch:** `main` (`566fd00`, PR #8); `engine/owner-decisions` — მფლობელის 2026-10-08-ის გადაწყვეტილებები და ძრავის გასწორებები · **GitHub:** `tornikebolokadze1-cyber/Asterbit` — **public** (2026-10-08-ს, ამ სესიის გარეთ გახდა საჯარო; დილით private იყო). gitleaks-მა მთელი ისტორია შეამოწმა (`--all`, 34 commit): „no leaks found" · **გუნდი:** მფლობელი + თანამშრომელი lashavamleti (წერის უფლება, მოწვევა მიღებულია)
 - **Decisions:** ADR-0004 accepted; ADR-0001…0003 და ADR-0005…0008 proposed
 - **Owner's decisions (2026-10-08):** ახლა მხოლოდ ძრავის სრულყოფაა საჭირო; ძრავის საცდელი გაშვება არ ტარდება — Phase 0-ის კარიბჭე auditor-ის შემოწმებითა და მფლობელის დამტკიცებით დაიხურება; Codex იშლება, CodeRabbit-ს მფლობელი მოგვიანებით განიხილავს
 - **Not built yet:** Phase 0-ის კარიბჭე; პროდუქტის იდეა არ არის არჩეული
