@@ -18,6 +18,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / ".claude/hooks"))
+from transcript_usage import context_size  # noqa: E402  (shared with context_monitor.py)
 
 
 def load_events(logs: Path, date: str | None, session: str | None) -> list[dict]:
@@ -32,17 +34,21 @@ def load_events(logs: Path, date: str | None, session: str | None) -> list[dict]
 
 
 def token_totals(transcript: Path) -> tuple[int, int]:
-    """(last context size, total output tokens) from a transcript's usage fields."""
-    last, output = 0, 0
-    for line in transcript.read_text(encoding="utf-8", errors="ignore").splitlines():
+    """(last context size, total output tokens) from a transcript's usage fields.
+
+    One API response is written as several lines with the same message id and usage, so
+    output is counted once per id (the last line wins)."""
+    last, outputs = 0, {}
+    for number, line in enumerate(transcript.read_text(encoding="utf-8", errors="ignore").splitlines()):
         try:
-            usage = (json.loads(line).get("message") or {}).get("usage")
+            message = json.loads(line).get("message") or {}
+            usage = message.get("usage")
         except (json.JSONDecodeError, AttributeError):
             continue
-        if usage:
-            last = sum(int(usage.get(k) or 0) for k in ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens"))
-            output += int(usage.get("output_tokens") or 0)
-    return last, output
+        if isinstance(usage, dict) and usage:
+            last = context_size(usage)
+            outputs[message.get("id") or f"line {number}"] = int(usage.get("output_tokens") or 0)
+    return last, sum(outputs.values())
 
 
 def report(events: list[dict]) -> None:

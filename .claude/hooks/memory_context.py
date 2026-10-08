@@ -2,8 +2,11 @@
 """SessionStart hook: hand Claude the project's hot state at the start of a session.
 
 Injects memory/now.md, the Current State and Next Steps of PROGRESS.md and a
-handoff: this session's own after a compaction or resume, otherwise the newest
-one (it may come from another person's session). The text is capped so it
+handoff: this session's own on resume, none after a compaction (the summary is
+already in context, and SessionStart runs before PostCompact writes the new
+handoff, so the file still holds the previous one — seen live 2026-10-07),
+otherwise the newest one by time, not by file name (it may come from another
+person's session). The text is capped so it
 cannot flood the context, then fenced with a random nonce (forged fence markers
 inside are neutralised) so it reads as stored data, not instructions (ADR-0006).
 The whole injected text — now.md, the PROGRESS sections and the handoff — is
@@ -31,14 +34,20 @@ def read(path: Path) -> str:
     return path.read_text(encoding="utf-8").strip() if path.exists() else ""
 
 
+def newest(path: Path) -> tuple[float, str]:
+    return path.stat().st_mtime, path.name
+
+
 def pick_handoff(project: Path, source: str, session_id: str) -> tuple[str, Path | None]:
-    handoffs = sorted((project / "memory/episodic/handoffs").glob("*.md"))
-    if source in ("compact", "resume"):
+    if source == "compact":
+        return "", None
+    handoffs = list((project / "memory/episodic/handoffs").glob("*.md"))
+    if source == "resume":
         key = re.sub(r"[^A-Za-z0-9]", "", session_id)[:8]
         own = [p for p in handoffs if key and p.stem.endswith(key)]
         if own:
-            return "this session's handoff", own[-1]
-    return ("newest handoff (may be from another person's session)", handoffs[-1]) if handoffs else ("", None)
+            return "this session's handoff", max(own, key=newest)
+    return ("newest handoff (may be from another person's session)", max(handoffs, key=newest)) if handoffs else ("", None)
 
 
 def build_context(project: Path, source: str, session_id: str) -> str:

@@ -2,7 +2,8 @@
 """PostToolUse hook: ask for a handoff checkpoint BEFORE compaction (ADR-0006).
 
 Context use = the token counts of the last assistant message in the session
-transcript (input + cache read + cache creation). The compaction point is read
+transcript (input + cache read + cache creation), read through
+transcript_usage.context_size so an advisor turn is not counted twice. The compaction point is read
 from autoCompactWindow in .claude/settings.json, so a later ADR that moves it
 cannot silently break this monitor. From MARGIN tokens before that point, Claude
 is asked — once per STEP-token band — to write a checkpoint into this session's
@@ -23,6 +24,7 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from memory_handoff import session_key  # noqa: E402
+from transcript_usage import context_size  # noqa: E402
 
 MARKER = "ASTERBIT-CONTEXT-MONITOR"
 WINDOW = 1_000_000          # Sonnet 5.5 / Opus 5.5 context window, used only for the percentage shown
@@ -46,7 +48,7 @@ def context_tokens(transcript: Path) -> int:
         except (json.JSONDecodeError, AttributeError):
             continue
         if isinstance(usage, dict) and usage:
-            return sum(int(usage.get(k) or 0) for k in ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens"))
+            return context_size(usage)
     raise ValueError("no token usage found in the transcript tail")
 
 
