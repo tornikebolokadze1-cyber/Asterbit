@@ -10,7 +10,7 @@ The full working rules are in [CLAUDE.md](CLAUDE.md) (English) and [PROCESS.md](
 - Only the owner approves gates and merges into `main`. Never approve your own work or record an approval on someone else's behalf.
 
 ## Safety — copied from CLAUDE.md, always in force
-The guards in `.claude/hooks/` run only inside Claude Code, so for you these rules hold on your word; CI (structure check, hook drills, gitleaks) still runs on every pull request.
+The guards in `.claude/hooks/` run only inside Claude Code, so for you these rules hold on your word; CI (structure check, hook drills, gitleaks) still runs on every pull request. Where your own user-level or global rules differ from these — commits, subagents, models, reviews — these rules and `CLAUDE.md` win in this repo (owner, 2026-10-08).
 - Work on a branch and push working branches freely; never push to `main` — `main` changes only through a pull request that the owner approves and merges.
 - Ask the person you work with before you install anything or fetch from the internet. Changes to permissions, hooks, settings or CI affect everyone, so they need the owner's yes.
 - Never force-push, rewrite pushed history, or run `rm -rf`, `git reset --hard` or `git clean -f`.

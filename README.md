@@ -82,12 +82,11 @@ Asterbit/
 
 ## რა მზადაა და რა არა
 
-- ✅ დირექტორია, თარგები, ეტაპების ბრძანებები, სამი აგენტი, ოთხი ADR (ADR-0004 `accepted`, დანარჩენი `proposed`)
+- ✅ დირექტორია, თარგები, ეტაპების ბრძანებები, ოთხი აგენტი, შვიდი ADR (ADR-0004 `accepted`, დანარჩენი `proposed`)
 - ✅ [PROCESS.md](PROCESS.md) — სამუშაო შეთანხმება და [PROGRESS.md](PROGRESS.md) — პროგრესის ჟურნალი
 - ✅ Anthropic-ის playbook-ის შესწავლა და კოლექციის შეფასება
 - ✅ მეხსიერების ინსტრუმენტები შეთანხმებულია ([ADR-0004](docs/decisions/0004-context-and-memory.md))
 - ✅ შენი პრინციპები handoff-ებისა და შეჯამებებისთვის (`memory/README.md`)
 - ✅ harness v0 ([ADR-0005](docs/decisions/0005-harness-v0.md)): `.claude/settings.json`, დამცავი და მეხსიერების hook-ები, შემოწმებები `sdlc/checks/`-ში, CI ყოველ PR-ზე
-- ⏳ ძრავის საცდელი გაშვება
 - ✅ პროექტი დამოუკიდებელია: `main`-შია, ნებისმიერ კომპიუტერზე ჩამოიტვირთება, თანამშრომლის გზამკვლევი — [CONTRIBUTING.md](CONTRIBUTING.md), ფაილების რუკა — [docs/FILES.md](docs/FILES.md)
-- ⏳ ADR-0001…0003, ADR-0005-ისა და PROCESS.md-ის დამტკიცება (Phase 0-ის კარიბჭე)
+- ⏳ ADR-0001…0003, ADR-0005…0007-ისა და PROCESS.md-ის დამტკიცება (Phase 0-ის კარიბჭე)

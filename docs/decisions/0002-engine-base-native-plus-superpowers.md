@@ -7,7 +7,7 @@ date: 2026-10-06
 deciders: owner (to approve), Claude (drafted)
 supersedes: —
 superseded_by: —
-review_by: after the engine dry run
+review_by: at the Phase 0 gate
 tags: [engine, tooling]
 ---
 # 0002 — Engine base
@@ -40,10 +40,10 @@ Note added 2026-10-07 (still `proposed`): "No new installs" holds for the owner'
 
 ## Consequences (შედეგები)
 - Positive: clear, small, auditable engine.
-- Negative: skill quality depends on us → a dry run on a toy intent comes before the real product.
+- Negative: skill quality depends on us → the `auditor` reviews the whole engine at the Phase 0 gate, and the first real phases are watched for the questions C1–C8 in `sdlc/research/engine-assessment-2026-10.md`. The owner cancelled the engine dry run on a toy intent (2026-10-08).
 
 ## Verification (როგორ შევამოწმებთ)
-Engine dry run: a toy intent passes phases 1–6 with every gate exercised; result logged in tasks/todo.md. Not done yet.
+Phase 0 gate: the auditor's review of the whole engine, then the first real phases with every gate exercised; result logged in tasks/todo.md. Not done yet.
 
 ## Links
 - sdlc/research/engine-selection.md
