@@ -64,6 +64,16 @@ def fake_token() -> str:
     return "gh" + "p_" + random_text(36)
 
 
+def generic_key_value() -> str:
+    """A fixed high-entropy value with no two letters side by side, so no gitleaks stopword can match it.
+
+    A random value missed in about one run in four (2026-10-07), most likely on a stopword or the
+    entropy limit (cause unverified). Built at run time so this file holds no key-like literal.
+    """
+    digits, letters = "7391528406", "afcebd"
+    return "".join(digits[i % 10] + letters[i * 5 % 6] for i in range(16))
+
+
 class Drill:
     def __init__(self) -> None:
         self.results: list[tuple[str, str, str]] = []
@@ -99,7 +109,8 @@ class Drill:
 
 
 def drill_guard(drill: Drill, repo: Path) -> None:
-    clean = ["git status", "rm notes.txt", "git push -u origin feature/x", "git commit -m 'add feature'",
+    clean = ["git status", "grep -n rm notes.md", "echo rm", "git commit -m 'rm the old note'",
+             "git push -u origin feature/x", "git commit -m 'add feature'",
              f"ssh -i ~/.ssh/{KEY_FILE} host", "ls -rf", "echo main", f"grep base64 {ENV_FILE}.example",
              "git checkout -b feature/y", "git branch -d feature/old", "git restore --staged notes.md",
              "echo 'a -> b; c && d'"]
@@ -111,7 +122,10 @@ def drill_guard(drill: Drill, repo: Path) -> None:
               f"cat ~/.ssh/{KEY_FILE} | base64", f"base64 <{ENV_FILE}", "git filter-branch",
               "bash -c 'git push origin main'", f"sh -c \"cd /tmp && {RM_RF} build\"", f"eval git reset {HARD}"]
     ask = ["git switch -f main", "git switch --discard-changes feature/x", "git checkout -- notes.md",
-           "git checkout .", "git restore notes.md", "git branch -D feature/old", "git stash drop"]
+           "git checkout .", "git restore notes.md", "git branch -D feature/old", "git stash drop",
+           # owner, 2026-10-08: every deletion asks first
+           "rm notes.txt", "rm -f notes.txt", "sudo rm notes.txt", "xargs rm < list.txt",
+           "find . -name '*.tmp' -exec rm {} ;", "bash -c 'rm notes.txt'", "git rm notes.md"]
     for command in clean:
         drill.expect("guard", command, run_hook("guard.py", bash_event(command, repo)), False, GUARD)
     for command in seeded:
@@ -136,9 +150,11 @@ def drill_guard_on_main(drill: Drill, repo: Path) -> None:
 
 def drill_read_only_agents(drill: Drill, repo: Path) -> None:
     allowed = [("git diff HEAD", "verifier"), ("python3 -m pytest -q 2>&1", "verifier"),
-               ("grep -n '->' notes.md", "auditor"), ("touch x", "")]
+               ("grep -n '->' notes.md", "auditor"), ("touch x", ""),
+               ("git stash list", "auditor"), ("git stash show -p", "verifier")]  # owner, 2026-10-08
     blocked = [("touch probe.txt", "verifier"), ("echo x > out.txt", "auditor"), ("git commit -m fix", "auditor"),
-               ("sed -i s/a/b/ f", "architect"), ("bash -c 'touch x'", "verifier"), ("gh pr merge 3", "auditor")]
+               ("sed -i s/a/b/ f", "architect"), ("bash -c 'touch x'", "verifier"), ("gh pr merge 3", "auditor"),
+               ("git stash", "auditor"), ("git stash pop", "verifier")]
     for command, agent in allowed:
         drill.expect("read-only agents", f"{agent or 'main session'}: {command}",
                      run_hook("guard.py", bash_event(command, repo, agent)), False, GUARD)
@@ -226,7 +242,7 @@ def drill_commit_secrets(drill: Drill, repo: Path) -> None:
     if shutil.which("gitleaks") is None:
         drill.add(gate, "SKIPPED", "gitleaks branch (gitleaks not installed here; CI installs it)")
         return
-    stage(repo, "service.cfg", "api_" + f'key = "{random_text(32)}"\n')
+    stage(repo, "service.cfg", "api_" + f'key = "{generic_key_value()}"\n')
     drill.expect(gate, "generic key only gitleaks knows", run_hook("commit_secrets.py", commit), True, SECRETS_MARKER)
     unstage(repo, "service.cfg")
 
@@ -424,6 +440,42 @@ def drill_memory_v3(drill: Drill, project: Path) -> None:
                       loud.returncode == 0 and "context ≈ 56%" in loud.stdout)
 
 
+def drill_memory_v4(drill: Drill, project: Path) -> None:
+    """Owner's decisions 2026-10-08: a long handoff keeps its tail; a fresh session is not 'unmeasurable'."""
+    handoffs = project / "memory/episodic/handoffs"
+    handoffs.mkdir(parents=True, exist_ok=True)
+    (handoffs / "2026-10-08-drillcut.md").write_text(
+        "HEAD-OF-HANDOFF phase 0\n" + "a middle line that may go\n" * 1500 + "Next: TAIL-NEXT-STEP\n", encoding="utf-8")
+    (handoffs / "2026-10-08-drillsho.md").write_text("SHORT-HANDOFF\nNext: SHORT-TAIL\n", encoding="utf-8")
+    def own(session: str) -> str:
+        return context_of(run_hook("memory_context.py", {"hook_event_name": "SessionStart", "source": "resume", "session_id": session}, project))
+    long, short = own("drillcut"), own("drillsho")
+    drill.expect_bool("memory_context", "long handoff → its head and its last line (the next step) kept, only the middle cut, and said",
+                      "HEAD-OF-HANDOFF" in long and "TAIL-NEXT-STEP" in long and "cut from the middle" in long and len(long) < 17000)
+    drill.expect_bool("memory_context", "clean control: a short handoff → loaded whole, nothing cut",
+                      "SHORT-HANDOFF" in short and "SHORT-TAIL" in short and "cut from the middle" not in short)
+    def monitor(session: str, path: Path) -> subprocess.CompletedProcess:
+        return run_hook("context_monitor.py", {"session_id": session, "transcript_path": str(path)}, project)
+    def unmeasured(key: str) -> bool:
+        path = project / f".claude/logs/context-monitor-{key}.json"
+        return path.exists() and json.loads(path.read_text(encoding="utf-8")).get("unmeasured") is True
+    fresh, odd, calm = project / "fresh.jsonl", project / "no-usage.jsonl", project / "calm.jsonl"
+    fresh.write_text(json.dumps({"type": "user", "message": {"role": "user", "content": "hi"}}) + "\n", encoding="utf-8")
+    odd.write_text(json.dumps({"type": "assistant", "message": {"id": "m1", "content": []}}) + "\n", encoding="utf-8")
+    calm.write_text(usage_line(300_000), encoding="utf-8")
+    first = monitor("drill-fresh", fresh)
+    drill.expect_clean("context_monitor", "clean control: fresh session, no assistant record yet → silent, the one-time alarm not used up",
+                       first.returncode == 0 and first.stdout.strip() == "" and not unmeasured("drillfre"))
+    changed = monitor("drill-nousage", odd)
+    drill.expect_bool("context_monitor", "assistant records without any usage (a format change) → 'could not measure' is said",
+                      changed.returncode == 0 and "could not measure" in changed.stdout)
+    monitor("drill-rearm", project / "missing.jsonl")
+    monitor("drill-rearm", calm)
+    again = monitor("drill-rearm", project / "missing.jsonl")
+    drill.expect_bool("context_monitor", "a failure, then a good measurement, then a failure → the second failure is said too",
+                      again.returncode == 0 and "could not measure" in again.stdout)
+
+
 def drill_structure_check(drill: Drill, scratch: Path) -> None:
     check = [sys.executable, str(ROOT / "sdlc/checks/check_structure.py")]
     clean = subprocess.run(check + [str(ROOT)], capture_output=True, text=True, timeout=120)
@@ -475,6 +527,7 @@ def main() -> int:
         drill_memory(drill, Path(tmp) / "project")
         drill_memory_v2(drill, Path(tmp) / "project")
         drill_memory_v3(drill, Path(tmp) / "project")
+        drill_memory_v4(drill, Path(tmp) / "project")
         drill_structure_check(drill, Path(tmp))
         drill_engine_checks(drill, Path(tmp))
     return report(drill)

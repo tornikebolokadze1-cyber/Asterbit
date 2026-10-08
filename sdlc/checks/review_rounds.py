@@ -7,14 +7,17 @@ Rounds are counted from an append-only ledger, never from the model's memory.
 LOW findings are logged but never keep the loop open. If HIGH+MEDIUM do not
 fall between two reviews, the loop stops early and goes to the owner.
 Reviews 2 and 3 must cover exactly the fix: --base is the previous review's
---head and --head is the fix's commit. Loop ids: M1, M1-T4, gate-spec, ENG-…;
+--head and --head is the fix's commit. Every SHA must be a real commit in --repo
+(default: this repository), a review's base must be an ancestor of its head, and
+a fix must build on the reviewed head. Loop ids: M1, M1-T4, gate-spec, ENG-…;
 after the owner decides an escalated loop, continue under a new id (M1-r2).
 
 Usage:
     review_rounds.py review <loop> --base SHA --head SHA --high N --medium N --low N
     review_rounds.py fix <loop> --head SHA
     review_rounds.py status <loop>
-Options: --ledger PATH (default: tasks/review-log.jsonl in this repo).
+Options: --ledger PATH (default: tasks/review-log.jsonl in this repo),
+         --repo PATH (where the commits live; default: this repo).
 
 Exit codes. status: 0 = closed clean, 1 = escalate to the owner, 2 = inconclusive
 (ledger unreadable or malformed, or a usage error), 3 = continue (the next step is printed).
@@ -26,12 +29,14 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 MAX_FIXES = 2
-DEFAULT_LEDGER = Path(__file__).resolve().parents[2] / "tasks/review-log.jsonl"
+REPO = Path(__file__).resolve().parents[2]
+DEFAULT_LEDGER = REPO / "tasks/review-log.jsonl"
 LOOP_ID = re.compile(r"^[A-Za-z0-9._-]{1,40}$")
 SHA = re.compile(r"^[0-9a-f]{7,40}$")
 COUNTS = ("high", "medium", "low")
@@ -62,6 +67,20 @@ def load(ledger: Path, loop: str) -> list[dict]:
         return []
     entries = [checked(json.loads(line)) for line in ledger.read_text(encoding="utf-8").splitlines() if line.strip()]
     return [e for e in entries if e.get("loop") == loop]
+
+
+def history_problem(repo: Path, older: str, newer: str) -> str:
+    """Why `older..newer` is not a real range of commits in `repo`, or "" when it is."""
+    def git(*args: str) -> int:
+        return subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, timeout=15).returncode
+    if git("rev-parse", "--git-dir") != 0:
+        raise RuntimeError(f"{repo} is not a git repository, so the commits cannot be checked")
+    for sha in (older, newer):
+        if git("cat-file", "-e", f"{sha}^{{commit}}") != 0:
+            return f"commit {sha} does not exist in {repo}"
+    if git("merge-base", "--is-ancestor", older, newer) != 0:
+        return f"{older} is not an ancestor of {newer} — the range is not one line of history"
+    return ""
 
 
 def blocking(entry: dict) -> int:
@@ -102,7 +121,12 @@ def record(args: argparse.Namespace, entries: list[dict]) -> int:
         print(f"REVIEW-LOOP: review {len(reviews) + 1} must cover exactly the fix: "
               f"--base {reviews[-1]['head']} --head {entries[-1]['head']}")
         return 1
-    entry = {"ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "loop": args.loop,
+    older = args.base if args.command == "review" else reviews[-1]["head"]
+    problem = history_problem(args.repo, older, args.head)
+    if problem:
+        print(f"REVIEW-LOOP: {problem}")
+        return 1
+    entry ={"ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "loop": args.loop,
              "step": args.command, "round": sum(e["step"] == args.command for e in entries) + 1, "head": args.head}
     if args.command == "review":
         entry.update(base=args.base, high=args.high, medium=args.medium, low=args.low)
@@ -118,6 +142,7 @@ def parse(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("command", choices=("review", "fix", "status"))
     parser.add_argument("loop", help="milestone or task id, e.g. M1 or M1-T4")
     parser.add_argument("--ledger", type=Path, default=DEFAULT_LEDGER)
+    parser.add_argument("--repo", type=Path, default=REPO)
     parser.add_argument("--base", default="")
     parser.add_argument("--head", default="")
     for level in COUNTS:
@@ -138,7 +163,8 @@ def main(argv: list[str]) -> int:
             return record(args, entries)
         step, code = next_step(entries)
     except Exception as error:  # any failure proves nothing: inconclusive, never escalate or refuse by accident
-        print(f"REVIEW-LOOP: INCONCLUSIVE — ledger {args.ledger} unreadable or malformed ({type(error).__name__}: {error})")
+        print(f"REVIEW-LOOP: INCONCLUSIVE — ledger {args.ledger} or repository {args.repo} unreadable or malformed "
+              f"({type(error).__name__}: {error})")
         return 2
     print(f"REVIEW-LOOP: {args.loop} — {len(entries)} entries in {args.ledger.name}; next: {step}")
     return code

@@ -7,8 +7,9 @@ main (including `git push origin HEAD` while on main), --no-verify, history
 rewriting, credential files sent over the network or encoded, writing secret
 files, and — for the auditor / verifier / architect agents — any file change.
 Asks first (JSON permissionDecision "ask"): commands that throw away
-uncommitted work or delete a branch. Commands hidden in `bash -c` / `eval`
-are checked too. Everything else exits 0 and the normal permission rules
+uncommitted work or delete a branch, and every file deletion — `rm` run as a
+command and `git rm` (owner, 2026-10-08: "ask us every time"). Commands hidden
+in `bash -c` / `eval` are checked too. Everything else exits 0 and the normal permission rules
 decide. If the guard itself fails, it blocks.
 """
 from __future__ import annotations
@@ -38,6 +39,10 @@ SHORT_FLAGS = re.compile(r"-[a-zA-Z]+")
 Finding = tuple[str, str]  # ("block" | "ask", reason)
 REDIRECT_OPERATOR = re.compile(r"\d*(?:>>?|<<?<?|>\||<>)")  # its target is the next token
 REDIRECT_WITH_TARGET = re.compile(r"\d*(?:>>?|<<?|>\|)\S+")  # e.g. 2>/dev/null, >push.log
+DELETION = "this deletes files — the owner asked to be asked before every deletion (2026-10-08)"
+LAUNCHERS = {"sudo", "doas", "xargs", "env", "nohup", "nice", "time", "command", "builtin", "exec",
+             "-exec", "-execdir", "-ok", "-okdir"}
+ASSIGNMENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=")  # VAR=value in front of a command
 
 
 def without_redirects(tokens: list[str]) -> list[str]:
@@ -153,6 +158,8 @@ def discard_problem(subcommand: str, args: list[str]) -> Finding | None:
         return "ask", "git branch -D deletes a branch even if its work is not merged"
     if subcommand == "stash" and args[:1] in (["drop"], ["clear"]):
         return "ask", "git stash drop/clear deletes saved work"
+    if subcommand == "rm":
+        return "ask", DELETION
     return None
 
 
@@ -172,7 +179,14 @@ def git_problem(subcommand: str, args: list[str], cwd: str) -> Finding | None:
     return discard_problem(subcommand, args)
 
 
+def runs_as_command(tokens: list[str], i: int) -> bool:
+    """Is tokens[i] run as a command (`rm x`, `sudo rm x`, `xargs rm`, `find … -exec rm`), not just named (`grep rm x`)?"""
+    before = [t for t in tokens[:i] if not ASSIGNMENT.match(t)]
+    return not before or any(os.path.basename(t) in LAUNCHERS for t in before)
+
+
 def rm_problem(tokens: list[str]) -> Finding | None:
+    asked = None
     for i, token in enumerate(tokens):
         if os.path.basename(token) != "rm":
             continue
@@ -182,7 +196,9 @@ def rm_problem(tokens: list[str]) -> Finding | None:
         force = "f" in short or "--force" in rest
         if recursive and force:
             return "block", "recursive force delete (rm -rf) — ask a person to delete it"
-    return None
+        if asked is None and runs_as_command(tokens, i):
+            asked = ("ask", DELETION)
+    return asked
 
 
 def bash_problem(command: str, cwd: str, depth: int = 0) -> Finding | None:
@@ -206,6 +222,7 @@ WRITE_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
 WRITING_COMMANDS = {"rm", "mv", "cp", "mkdir", "touch", "chmod", "chown", "tee", "truncate", "dd", "ln", "rmdir"}
 WRITING_GIT = {"add", "commit", "push", "pull", "checkout", "switch", "reset", "restore", "merge", "rebase",
                "stash", "clean", "rm", "mv", "tag", "cherry-pick", "revert", "apply", "am", "worktree", "branch"}
+READING_GIT = {("stash", "list"), ("stash", "show")}  # owner, 2026-10-08: let read-only agents look at the stash
 QUOTED = re.compile(r"'[^']*'|\"(?:\\.|[^\"\\])*\"")
 REDIRECT = re.compile(r"(?<![0-9&])>{1,2}(?!&)\s*(?!/dev/null)\S")
 
@@ -223,7 +240,7 @@ def read_only_problem(tool: str, tool_input: dict, depth: int = 0) -> Finding | 
         words = {os.path.basename(t) for t in tokens}
         if words & WRITING_COMMANDS or (words & {"sed", "perl"} and any(t.startswith("-i") for t in tokens)):
             return "block", "a file-changing command is not allowed for a read-only agent"
-        if any(sub in WRITING_GIT for sub, _ in git_calls(tokens)):
+        if any(sub in WRITING_GIT and (sub, (args or [""])[0]) not in READING_GIT for sub, args in git_calls(tokens)):
             return "block", "a git command that changes the repo is not allowed for a read-only agent"
         if "gh" in words and words & {"create", "merge", "edit", "close", "comment", "delete"}:
             return "block", "a GitHub change is not allowed for a read-only agent"
