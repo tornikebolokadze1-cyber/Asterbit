@@ -7,7 +7,8 @@ and, optionally, a session transcript for token counts.
     python3 sdlc/checks/agent_report.py [--date YYYY-MM-DD] [--session KEY] [--transcript PATH]
 
 Exit codes: 0 = report printed · 2 = inconclusive (no events found — an empty log is
-not evidence that nothing happened).
+not evidence that nothing happened — or a transcript was given but holds no token usage).
+An unreadable log line is skipped and counted in the report, not hidden and not fatal.
 """
 from __future__ import annotations
 
@@ -22,23 +23,31 @@ sys.path.insert(0, str(ROOT / ".claude/hooks"))
 from transcript_usage import context_size  # noqa: E402  (shared with context_monitor.py)
 
 
-def load_events(logs: Path, date: str | None, session: str | None) -> list[dict]:
-    events = []
+def load_events(logs: Path, date: str | None, session: str | None) -> tuple[list[dict], int]:
+    """(events, number of unreadable lines skipped)."""
+    events, skipped = [], 0
     for path in sorted(logs.glob(f"events-{date or '*'}.jsonl")):
         for line in path.read_text(encoding="utf-8").splitlines():
-            if line.strip():
+            if not line.strip():
+                continue
+            try:
                 record = json.loads(line)
-                if not session or record.get("session") == session:
-                    events.append(record)
-    return events
+            except json.JSONDecodeError:
+                skipped += 1
+                continue
+            if not isinstance(record, dict):
+                skipped += 1
+            elif not session or record.get("session") == session:
+                events.append(record)
+    return events, skipped
 
 
-def token_totals(transcript: Path) -> tuple[int, int]:
-    """(last context size, total output tokens) from a transcript's usage fields.
+def token_totals(transcript: Path) -> tuple[int, int] | None:
+    """(last context size, total output tokens) from a transcript's usage fields; None if it has none.
 
     One API response is written as several lines with the same message id and usage, so
     output is counted once per id (the last line wins)."""
-    last, outputs = 0, {}
+    last, outputs = None, {}
     for number, line in enumerate(transcript.read_text(encoding="utf-8", errors="ignore").splitlines()):
         try:
             message = json.loads(line).get("message") or {}
@@ -48,7 +57,7 @@ def token_totals(transcript: Path) -> tuple[int, int]:
         if isinstance(usage, dict) and usage:
             last = context_size(usage)
             outputs[message.get("id") or f"line {number}"] = int(usage.get("output_tokens") or 0)
-    return last, sum(outputs.values())
+    return None if last is None else (last, sum(outputs.values()))
 
 
 def report(events: list[dict]) -> None:
@@ -73,15 +82,21 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--transcript", type=Path)
     args = parser.parse_args(argv)
     try:
-        events = load_events(args.logs, args.date, args.session)
+        events, skipped = load_events(args.logs, args.date, args.session)
         tokens = token_totals(args.transcript) if args.transcript else None
     except (OSError, ValueError) as error:
         print(f"AGENT-REPORT: INCONCLUSIVE — {type(error).__name__}: {error}")
         return 2
     if not events:
-        print(f"AGENT-REPORT: INCONCLUSIVE — no events in {args.logs} for the given filter")
+        print(f"AGENT-REPORT: INCONCLUSIVE — no events in {args.logs} for the given filter"
+              + (f" ({skipped} unreadable line(s) skipped)" if skipped else ""))
         return 2
     report(events)
+    if skipped:
+        print(f"  skipped {skipped} unreadable log line(s)")
+    if args.transcript and tokens is None:
+        print(f"  tokens: INCONCLUSIVE — no token usage in {args.transcript}")
+        return 2
     if tokens:
         print(f"  tokens: context now {tokens[0]:,}; output so far {tokens[1]:,}")
     return 0

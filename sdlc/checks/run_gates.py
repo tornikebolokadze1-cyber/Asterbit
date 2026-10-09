@@ -38,24 +38,38 @@ def load(path: Path) -> list[dict]:
     return gates
 
 
+def gate_settings(gate: dict) -> tuple[int, int, re.Pattern[str] | None]:
+    """(timeout, min_count, count pattern) — a bad value raises, and the gate is then INCONCLUSIVE, not FAIL."""
+    pattern = re.compile(gate["count_pattern"]) if gate.get("count_pattern") else None
+    if pattern is not None and pattern.groups < 1:
+        raise ValueError("count_pattern needs a group around the number, e.g. (\\d+) passed")
+    return int(gate.get("timeout", 600)), int(gate.get("min_count", 1)), pattern
+
+
 def run_gate(gate: dict) -> tuple[str, str]:
     try:
-        proc = subprocess.run(gate["command"], cwd=ROOT, capture_output=True, text=True, timeout=int(gate.get("timeout", 600)))
+        timeout, minimum, pattern = gate_settings(gate)
+    except (re.error, ValueError, TypeError) as error:
+        return "INCONCLUSIVE", f"bad gate config — {error}"
+    try:
+        proc = subprocess.run(gate["command"], cwd=ROOT, capture_output=True, text=True, timeout=timeout)
     except FileNotFoundError:
         return "INCONCLUSIVE", f"command not found: {gate['command'][0]}"
     except subprocess.TimeoutExpired:
-        return "INCONCLUSIVE", f"timed out after {gate.get('timeout', 600)} s"
+        return "INCONCLUSIVE", f"timed out after {timeout} s"
+    except OSError as error:
+        return "INCONCLUSIVE", f"command could not run — {error}"
     if proc.returncode != 0:
         return "FAIL", f"exit {proc.returncode}"
-    pattern = gate.get("count_pattern")
-    if not pattern:
+    if pattern is None:
         return "PASS", "exit 0"
-    match = re.search(pattern, proc.stdout + proc.stderr)
-    counted = int(match.group(1)) if match and match.group(1).isdigit() else None
+    match = pattern.search(proc.stdout + proc.stderr)
+    found = (match.group(1) or "") if match else ""
+    counted = int(found) if found.isdigit() else None
     if counted is None:
         return "INCONCLUSIVE", "exit 0 but the count pattern was not found — nothing proved"
-    if counted < int(gate.get("min_count", 1)):
-        return "INCONCLUSIVE", f"exit 0 but only {counted} counted (minimum {gate.get('min_count', 1)})"
+    if counted < minimum:
+        return "INCONCLUSIVE", f"exit 0 but only {counted} counted (minimum {minimum})"
     return "PASS", f"exit 0, {counted} counted"
 
 

@@ -14,30 +14,59 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CHECKS = ROOT / "sdlc/checks"
-SHA = ("a1b2c3d", "b2c3d4e", "c3d4e5f", "d4e5f60")
 
 
-def tracked_copy(dst: Path) -> Path:
-    """A hermetic copy: only files git tracks (with their working-tree content) in a fresh repository.
+def tracked_copy(dst: Path, root: Path = ROOT) -> Path:
+    """A hermetic copy of the working tree as git sees it, in a fresh repository.
 
-    Untracked work in progress or a local .env never leaks into a drill, and it works from a
-    git worktree too (there .git is a file, not a folder).
+    Tracked files (with their working-tree content) and untracked files that are not ignored:
+    a tracked file may already link to a new file that is not committed yet, and leaving that
+    file out made a clean control fail on a dirty tree (engine assessment B5). Ignored files —
+    a local .env, logs — never leak into a drill. Works from a git worktree too (there .git is
+    a file, not a folder).
     """
-    files = subprocess.run(["git", "-C", str(ROOT), "ls-files", "--cached"], capture_output=True, text=True, check=True).stdout
+    files = subprocess.run(["git", "-C", str(root), "ls-files", "--cached", "--others", "--exclude-standard"],
+                           capture_output=True, text=True, check=True).stdout
     for rel in files.splitlines():
-        if (ROOT / rel).is_file():
+        if (root / rel).is_file():
             (dst / rel).parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(ROOT / rel, dst / rel)
+            shutil.copy2(root / rel, dst / rel)
     subprocess.run(["git", "init", "-q", str(dst)], check=True)
     return dst
 
 
-def rounds(ledger: Path, *args: str) -> subprocess.CompletedProcess:
-    command = [sys.executable, str(CHECKS / "review_rounds.py"), *args, "--ledger", str(ledger)]
+def drill_tracked_copy(drill, scratch: Path) -> None:
+    """B5: the drill copy mirrors the working tree — a new untracked file comes along, an ignored one never does."""
+    source, secret_file = scratch / "copy-source", "." + "env"
+    source.mkdir()
+    subprocess.run(["git", "init", "-q", str(source)], check=True)
+    (source / ".gitignore").write_text(secret_file + "*\n", encoding="utf-8")
+    (source / "FILES.md").write_text("- [new](new.md)\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(source), "add", ".gitignore", "FILES.md"], check=True)
+    (source / "new.md").write_text("# new, not committed yet\n", encoding="utf-8")
+    (source / secret_file).write_text("A=1\n", encoding="utf-8")
+    copy = tracked_copy(scratch / "copy-target", source)
+    drill.expect_bool("tracked_copy", "a new untracked file that a tracked file links to is copied (B5)", (copy / "new.md").is_file())
+    drill.expect_bool("tracked_copy", "an ignored local secret file is never copied", not (copy / secret_file).exists())
+
+
+def commits(repo: Path, count: int) -> list[str]:
+    """A scratch repository with `count` real commits in one line of history; their full SHAs, oldest first."""
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    identity = ["-c", "user.name=drill", "-c", "user.email=drill@example.invalid", "-c", "core.hooksPath=/dev/null"]
+    shas = []
+    for number in range(count):
+        subprocess.run(["git", "-C", str(repo), *identity, "commit", "-q", "--allow-empty", "-m", f"step {number}"], check=True)
+        shas.append(subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip())
+    return shas
+
+
+def rounds(ledger: Path, repo: Path, *args: str) -> subprocess.CompletedProcess:
+    command = [sys.executable, str(CHECKS / "review_rounds.py"), *args, "--ledger", str(ledger), "--repo", str(repo)]
     return subprocess.run(command, capture_output=True, text=True, timeout=30)
 
 
-def play(ledger: Path, loop: str, steps: list[tuple]) -> list[int]:
+def play(ledger: Path, repo: Path, loop: str, steps: list[tuple]) -> list[int]:
     """Steps: ("review", base, head, high, medium[, low]) or ("fix", head). Returns the exit codes."""
     codes = []
     for step in steps:
@@ -46,62 +75,84 @@ def play(ledger: Path, loop: str, steps: list[tuple]) -> list[int]:
             args = ["review", loop, "--base", step[1], "--head", step[2], "--high", str(step[3]), "--medium", str(step[4]), "--low", low]
         else:
             args = ["fix", loop, "--head", step[1]]
-        codes.append(rounds(ledger, *args).returncode)
+        codes.append(rounds(ledger, repo, *args).returncode)
     return codes
 
 
+def text_of(path: Path) -> str:
+    return path.read_text(encoding="utf-8") if path.exists() else ""
+
+
 def line_count(path: Path) -> int:
-    return len(path.read_text(encoding="utf-8").splitlines()) if path.exists() else 0
+    return len(text_of(path).splitlines())
 
 
 def drill_review_rounds(drill, scratch: Path) -> None:
-    gate, ledger = "review_rounds", scratch / "review-log.jsonl"
-    a, b, c, d = SHA
-    clean = play(ledger, "M1", [("review", a, b, 1, 2), ("fix", c), ("review", b, c, 0, 0, 3)])
-    status = rounds(ledger, "status", "M1")
+    gate, ledger, repo = "review_rounds", scratch / "review-log.jsonl", scratch / "rounds-repo"
+    a, b, c, d = commits(repo, 4)  # real commits: the ledger now checks that a range is one line of history
+    def run(*args: str) -> subprocess.CompletedProcess:
+        return rounds(ledger, repo, *args)
+    def steps(loop: str, items: list[tuple]) -> list[int]:
+        return play(ledger, repo, loop, items)
+    clean = steps("M1", [("review", a, b, 1, 2), ("fix", c), ("review", b, c, 0, 0, 3)])
+    status = run("status", "M1")
     drill.expect_bool(gate, "clean control: review → fix → review with only LOW → done (exit 0)",
                       clean == [0, 0, 0] and status.returncode == 0 and "done" in status.stdout)
     before = line_count(ledger)
-    early = rounds(ledger, "fix", "M2", "--head", a)
+    early = run("fix", "M2", "--head", a)
     drill.expect_bool(gate, "fix before any review → refused, nothing written",
                       early.returncode == 1 and "not allowed" in early.stdout and line_count(ledger) == before)
-    empty = rounds(ledger, "review", "M3", "--base", a, "--head", a, "--high", "1", "--medium", "0", "--low", "0")
+    empty = run("review", "M3", "--base", a, "--head", a, "--high", "1", "--medium", "0", "--low", "0")
     drill.expect_bool(gate, "review with base == head → refused", empty.returncode == 1 and "empty diff range" in empty.stdout)
-    full = play(ledger, "M4", [("review", a, b, 3, 2), ("fix", c), ("review", b, c, 2, 1), ("fix", d), ("review", c, d, 1, 0)])
+    full = steps("M4", [("review", a, b, 3, 2), ("fix", c), ("review", b, c, 2, 1), ("fix", d), ("review", c, d, 1, 0)])
     before = line_count(ledger)
-    third = rounds(ledger, "fix", "M4", "--head", a)
-    final = rounds(ledger, "status", "M4")
+    third = run("fix", "M4", "--head", a)
+    final = run("status", "M4")
     drill.expect_bool(gate, "findings after the final review → 3rd fix refused, nothing written, status escalates (exit 1)",
                       full == [0] * 5 and third.returncode == 1 and "not allowed" in third.stdout and line_count(ledger) == before
                       and final.returncode == 1 and "final review" in final.stdout)
-    play(ledger, "M6", [("review", a, b, 1, 0), ("fix", c)])
+    steps("M6", [("review", a, b, 1, 0), ("fix", c)])
     before = line_count(ledger)
-    shifted = rounds(ledger, "review", "M6", "--base", a, "--head", c, "--high", "0", "--medium", "0", "--low", "0")
+    shifted = run("review", "M6", "--base", a, "--head", c, "--high", "0", "--medium", "0", "--low", "0")
     drill.expect_bool(gate, "review 2 not covering exactly the fix (base ≠ previous head) → refused, nothing written",
                       shifted.returncode == 1 and "must cover exactly the fix" in shifted.stdout and line_count(ledger) == before)
-    play(ledger, "M7", [("review", a, b, 1, 0)])
-    no_commit = rounds(ledger, "fix", "M7", "--head", b)
+    steps("M7", [("review", a, b, 1, 0)])
+    no_commit = run("fix", "M7", "--head", b)
     drill.expect_bool(gate, "fix with no new commit → refused", no_commit.returncode == 1 and "no new commit" in no_commit.stdout)
-    negative = rounds(ledger, "review", "M8", "--base", a, "--head", b, "--high", "1", "--medium", "-1", "--low", "0")
+    negative = run("review", "M8", "--base", a, "--head", b, "--high", "1", "--medium", "-1", "--low", "0")
     drill.expect_bool(gate, "negative finding count → rejected, nothing written",
-                      negative.returncode == 2 and "0 or more" in negative.stderr and "M8" not in ledger.read_text(encoding="utf-8"))
-    play(ledger, "M5", [("review", a, b, 0, 2), ("fix", c), ("review", b, c, 1, 1)])
-    stuck = rounds(ledger, "status", "M5")
+                      negative.returncode == 2 and "0 or more" in negative.stderr and "M8" not in text_of(ledger))
+    steps("M5", [("review", a, b, 0, 2), ("fix", c), ("review", b, c, 1, 1)])
+    stuck = run("status", "M5")
     drill.expect_bool(gate, "HIGH+MEDIUM did not fall → escalates early (exit 1)",
                       stuck.returncode == 1 and "did not fall" in stuck.stdout)
+    before = line_count(ledger)
+    backwards = run("review", "M9", "--base", c, "--head", a, "--high", "1", "--medium", "0", "--low", "0")
+    ghost = run("review", "M10", "--base", a, "--head", "0" * 40, "--high", "1", "--medium", "0", "--low", "0")
+    steps("M11", [("review", a, c, 1, 0)])
+    after_review = line_count(ledger)
+    behind = run("fix", "M11", "--head", b)
+    drill.expect_bool(gate, "base after head, a SHA that is no commit, a fix that does not build on the reviewed head → all refused, nothing written",
+                      backwards.returncode == 1 and "not an ancestor" in backwards.stdout
+                      and ghost.returncode == 1 and "does not exist" in ghost.stdout
+                      and behind.returncode == 1 and "not an ancestor" in behind.stdout
+                      and after_review == before + 1 and line_count(ledger) == after_review)
+    elsewhere = rounds(ledger, scratch, "review", "M12", "--base", a, "--head", b, "--high", "1", "--medium", "0", "--low", "0")
+    drill.expect_bool(gate, "commits cannot be checked (not a git repository) → INCONCLUSIVE (exit 2), never recorded",
+                      elsewhere.returncode == 2 and "INCONCLUSIVE" in elsewhere.stdout and "M12" not in text_of(ledger))
     bad_lines = {"not json": "not json", "a list": "[]", "an unknown step": json.dumps({"loop": "M1", "step": "Review"}),
                  "a negative count": json.dumps({"loop": "M1", "step": "review", "high": 1, "medium": -1, "low": 0})}
     for label, line in bad_lines.items():
         broken = scratch / "broken-log.jsonl"
         broken.write_text(line + "\n", encoding="utf-8")
-        unreadable = rounds(broken, "status", "M1")
+        unreadable = rounds(broken, repo, "status", "M1")
         drill.expect_bool(gate, f"ledger line with {label} → INCONCLUSIVE (exit 2), never escalate or pass",
                           unreadable.returncode == 2 and "INCONCLUSIVE" in unreadable.stdout)
 
 
 PRD = "---\ntitle: drill\nstatus: approved\n---\n# PRD\n| ID | Feature | Journeys | Priority | Why |\n|---|---|---|---|---|\n" \
-      "| P-1 | add an expense | J-1 | must | core |\n| P-2 | export | J-1 | could | later |\n"
-SPEC = "---\ntitle: drill\nstatus: approved\n---\n# Spec\n- FR-1 — add an expense. Source: P-1\n- NFR-1 — fast. Source: TR-1\n"
+      "| P-1 | add a note | J-1 | must | core |\n| P-2 | export | J-1 | could | later |\n"
+SPEC = "---\ntitle: drill\nstatus: approved\n---\n# Spec\n- FR-1 — add a note. Source: P-1\n- NFR-1 — fast. Source: TR-1\n"
 PLAN = "---\ntitle: drill\nstatus: approved\n---\n# Plan\nM1 covers FR-1 and NFR-1.\n"
 TODO = "# Tasks\n- [ ] T1 — drill task · proof: `true` → exit 0\n"  # the copy's own todo: the live one may mention any ID
 
@@ -135,7 +186,7 @@ def drill_artifact_checks(drill, scratch: Path) -> None:
     check = [sys.executable, str(copy / "sdlc/checks/check_structure.py"), str(copy)]
     clean = subprocess.run(check, capture_output=True, text=True, timeout=120)
     drill.expect_clean(gate, "clean control: approved PRD → spec → plan, fully traced", clean.returncode == 0 and "PASS" in clean.stdout)
-    (copy / "docs/prd.md").write_text(PRD + "| P-3 | monthly budget | J-1 | must | core |\n\nCurrency: [NEEDS CLARIFICATION: which?]\n", encoding="utf-8")
+    (copy / "docs/prd.md").write_text(PRD + "| P-3 | shared tags | J-1 | must | core |\n\nLanguage: [NEEDS CLARIFICATION: which?]\n", encoding="utf-8")
     (copy / "docs/spec.md").write_text(SPEC + "- FR-2 — export to CSV. Source: P-2\n", encoding="utf-8")
     seeded = subprocess.run(check, capture_output=True, text=True, timeout=120)
     expected = ("docs/prd.md: approved but still has [NEEDS CLARIFICATION]", "must-priority feature P-3 reaches no requirement line",
@@ -147,12 +198,12 @@ def drill_artifact_checks(drill, scratch: Path) -> None:
     empty = subprocess.run(check, capture_output=True, text=True, timeout=120)
     drill.expect_bool(gate, "approved spec with no requirement, and an unknown status, are reported — never a silent pass",
                       empty.returncode == 1 and "no FR-n/NFR-n requirement found" in empty.stdout and "unknown status 'final'" in empty.stdout)
-    (copy / "docs/prd.md").write_text(PRD + "\n> [!question] Currency [NEEDS CLARIFICATION: GEL or USD?]\n", encoding="utf-8")
+    (copy / "docs/prd.md").write_text(PRD + "\n> [!question] Language [NEEDS CLARIFICATION: Georgian or English?]\n", encoding="utf-8")
     callout = subprocess.run(check, capture_output=True, text=True, timeout=120)
     drill.expect_bool(gate, "open question hidden in an Obsidian callout of an approved PRD → reported",
                       callout.returncode == 1 and "docs/prd.md: approved but still has [NEEDS CLARIFICATION]" in callout.stdout)
-    for label, line in (("an unfilled placeholder outside the guidance", "Currency: [NEEDS CLARIFICATION: <question>]"),
-                        ("a lower-case marker", "Currency: [needs clarification: GEL or USD?]")):
+    for label, line in (("an unfilled placeholder outside the guidance", "Language: [NEEDS CLARIFICATION: <question>]"),
+                        ("a lower-case marker", "Language: [needs clarification: Georgian or English?]")):
         (copy / "docs/prd.md").write_text(PRD + f"\n{line}\n", encoding="utf-8")
         variant = subprocess.run(check, capture_output=True, text=True, timeout=120)
         drill.expect_bool(gate, f"approved PRD with {label} → reported",
@@ -221,6 +272,12 @@ def drill_run_gates(drill, scratch: Path) -> None:
     drill.expect_bool(name, "a failing gate → FAIL (exit 1)", failed.returncode == 1 and "FAIL " in failed.stdout)
     none = script("run_gates.py", "--gates", str(scratch / "no-gates.json"))
     drill.expect_bool(name, "no gates file → INCONCLUSIVE (exit 2)", none.returncode == 2 and "INCONCLUSIVE" in none.stdout)
+    for label, broken in (("an invalid regex", {"count_pattern": "(\\d+ passed"}),
+                          ("a pattern without a group", {"count_pattern": "\\d+ passed"}),
+                          ("a timeout that is not a number", {"timeout": "soon"})):
+        config = run({**gate("ok", "print('3 passed')"), **broken})
+        drill.expect_bool(name, f"gate config with {label} → INCONCLUSIVE (exit 2), never FAIL",
+                          config.returncode == 2 and "bad gate config" in config.stdout)
 
 
 def drill_agent_report(drill, scratch: Path) -> None:
@@ -243,9 +300,20 @@ def drill_agent_report(drill, scratch: Path) -> None:
     tokens = script("agent_report.py", "--logs", str(logs), "--transcript", str(transcript))
     drill.expect_bool(name, "advisor turn written as two lines → context = last main-model round (300,000), output counted once (200)",
                       tokens.returncode == 0 and "context now 300,000; output so far 200" in tokens.stdout)
+    with (logs / "events-2026-10-07.jsonl").open("a", encoding="utf-8") as handle:
+        handle.write("{not json\n")
+    corrupt = script("agent_report.py", "--logs", str(logs))
+    drill.expect_bool(name, "one corrupt log line → skipped and counted; the other events are still reported (exit 0)",
+                      corrupt.returncode == 0 and "2 tool calls" in corrupt.stdout and "skipped 1 unreadable" in corrupt.stdout)
+    bare = scratch / "no-usage-transcript.jsonl"
+    bare.write_text(json.dumps({"type": "user", "message": {"content": "hi"}}) + "\n", encoding="utf-8")
+    blind = script("agent_report.py", "--logs", str(logs), "--transcript", str(bare))
+    drill.expect_bool(name, "transcript without token usage → INCONCLUSIVE (exit 2), never 'context now 0'",
+                      blind.returncode == 2 and "tokens: INCONCLUSIVE — no token usage" in blind.stdout and "context now 0" not in blind.stdout)
 
 
 def drill_engine_checks(drill, scratch: Path) -> None:
+    drill_tracked_copy(drill, scratch)
     drill_review_rounds(drill, scratch)
     drill_artifact_checks(drill, scratch)
     drill_memory_hygiene(drill, scratch)

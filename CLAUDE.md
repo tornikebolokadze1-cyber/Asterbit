@@ -25,7 +25,6 @@ After release, every finding, bug or new idea becomes a new intent in docs/chang
 
 Gate rules:
 - Read docs/sdlc-state.md before any phase work. Do not start phase N+1 until phase N is `approved`.
-- Dry run (owner, 2026-10-07): on a `dryrun/*` branch, phases 1–6 may run while Phase 0 is `in-progress` — that is how the engine is tested before its own gate. Approvals are still the owner's explicit words, recorded as `owner (DRY-RUN), <date>` with status `approved`; every other rule applies. Phase 3 writes its ADR and a proposed `.claude/` diff into docs/ and changes nothing live without the owner's yes. The branch is never merged; findings return to main as tasks/todo.md items through a separate PR. Before the first phase: `claude --version` ≥ 2.1.293, a new session started without `/model`, and `/status` (model, version) recorded in PROGRESS.md; after each gate, record the models the subagents ran on (`/tasks`).
 - No product code (anything outside docs/, tasks/, memory/, sdlc/, .claude/, .github/, .obsidian/ and the root files README.md, CLAUDE.md, AGENTS.md, PROCESS.md, PROGRESS.md, CONTRIBUTING.md, env.example, .gitignore) before docs/plan.md is approved.
 - Before asking for approval, run the `auditor` subagent on the artifact and show its verdict.
 - Approval = the owner's explicit words. Record who and when in docs/sdlc-state.md, then commit.
@@ -58,7 +57,7 @@ If the Superpowers plugin is installed (optional; see CONTRIBUTING.md), use its 
 - "Done" means the check ran and its output is shown. No output, no claim. "Could not run" is inconclusive, never a pass.
 - Bug fix: failing test first, then the fix. Never weaken, skip or delete a test to get green.
 - Same failing check: max 3 fix attempts, then stop and explain.
-- Review loop — ADR-0006 (proposed): every auditor loop — gate audit, milestone or `[high-risk]` task — runs review → fix → review → fix → final review → the owner. Engine changes before the Phase 0 gate skip the loop (owner, 2026-10-07: build the engine lean, use its principles once it runs): only the Safety rules, `check_structure.py` (plus the hook drills when a hook changed) and CI; work run through the engine — the dry run, then the product — uses the full loop. The Sonnet↔Opus code review runs at every milestone and every `[high-risk]` task. Count rounds with `python3 sdlc/checks/review_rounds.py`, never from memory (a gate audit's review 1 covers `$(git merge-base main HEAD)..HEAD` on the phase branch); reviews 2–3 cover only the fix; LOW findings never use a round; stop early when HIGH+MEDIUM do not fall. Every changed line traces to the task.
+- Review loop — ADR-0006 (proposed): every auditor loop — gate audit, milestone or `[high-risk]` task — runs review → fix → review → fix → final review → the owner. Engine changes before the Phase 0 gate skip the loop (owner, 2026-10-07: build the engine lean, use its principles once it runs): only the Safety rules, `check_structure.py` (plus the hook drills when a hook changed) and CI; work run through the engine — the product — uses the full loop. The Sonnet↔Opus code review runs at every milestone and every `[high-risk]` task. Count rounds with `python3 sdlc/checks/review_rounds.py`, never from memory (a gate audit's review 1 covers `$(git merge-base main HEAD)..HEAD` on the phase branch); reviews 2–3 cover only the fix; LOW findings never use a round; stop early when HIGH+MEDIUM do not fall. Every changed line traces to the task.
 - Adding, moving or renaming a file: update docs/FILES.md in the same change.
 - After changing engine files run `python3 sdlc/checks/check_structure.py`; after changing a hook also run `python3 sdlc/checks/drill_hooks.py` (must say ARMED) and the same with `ASTERBIT_DRILL_STUB=1` (must say DEAD). CI runs all three on every pull request.
 
@@ -85,7 +84,7 @@ When compacting, write the summary as a handoff, in this order:
 End with four Georgian lines: Done / In progress / Next / Blocked.
 
 ## Safety — these rules travel with the repo
-The owner's personal global rules exist only on the owner's machine; every other machine gets only what is written here.
+The owner's personal global rules exist only on the owner's machine; every other machine gets only what is written here. Where a user-level rule differs from this file — commits, subagents, models, reviews — this file and the engine's skills win in this repo (owner, 2026-10-08).
 - Work on a branch and push working branches freely (ADR-0005); never push to main — main changes only through a pull request that the owner approves and merges.
 - Ask the person you work with before you install anything or fetch from the internet. Changes to permissions, hooks, settings or CI affect everyone, so they need the owner's yes.
 - .claude/hooks/ enforces the rules below (guard.py, commit_secrets.py). If a hook blocks you, explain why and ask — never work around a hook. Stage and commit in separate commands so the secret scan sees the staged files; pass long commit or PR texts as files (`git commit -F`, `gh pr create --body-file`).

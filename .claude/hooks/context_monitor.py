@@ -8,8 +8,11 @@ from autoCompactWindow in .claude/settings.json, so a later ADR that moves it
 cannot silently break this monitor. From MARGIN tokens before that point, Claude
 is asked — once per STEP-token band — to write a checkpoint into this session's
 single handoff file, the same file memory_handoff.py replaces at compaction.
-If the use cannot be measured, Claude is told so once per session; the monitor
-never blocks a tool. A subagent's tool call is skipped: it shares the parent's
+If the use cannot be measured, Claude is told so once — and again after a later
+successful measurement; the monitor never blocks a tool. A brand-new session
+whose transcript holds no assistant record yet is not a failure: there is
+nothing to measure and nothing near the compaction point (seen 2026-10-08 on
+the first command of fresh sessions; why the record was missing is unverified). A subagent's tool call is skipped: it shares the parent's
 session id (the live event log showed agent_type "auditor" with the parent's
 session), so it would spend the main session's reminder band on an agent that
 cannot write the checkpoint.
@@ -38,17 +41,27 @@ def compaction_point(project: Path) -> int:
     return int(settings["autoCompactWindow"])
 
 
+class NothingToMeasureYet(Exception):
+    """The whole transcript has no assistant record yet: a brand-new session."""
+
+
 def context_tokens(transcript: Path) -> int:
+    size = transcript.stat().st_size
     with transcript.open("rb") as handle:
-        handle.seek(max(0, transcript.stat().st_size - TAIL_BYTES))
+        handle.seek(max(0, size - TAIL_BYTES))
         lines = handle.read().decode("utf-8", errors="ignore").splitlines()
+    assistant_seen = False
     for line in reversed(lines):
         try:
-            usage = (json.loads(line).get("message") or {}).get("usage")
+            record = json.loads(line)
+            assistant_seen = assistant_seen or record.get("type") == "assistant"
+            usage = (record.get("message") or {}).get("usage")
         except (json.JSONDecodeError, AttributeError):
             continue
         if isinstance(usage, dict) and usage:
             return context_size(usage)
+    if not assistant_seen and size <= TAIL_BYTES:  # the tail is the whole file, so this is not a format change
+        raise NothingToMeasureYet
     raise ValueError("no token usage found in the transcript tail")
 
 
@@ -63,11 +76,14 @@ def decide(project: Path, event: dict, state: dict) -> str:
     try:
         point = compaction_point(project)
         used = context_tokens(Path(event.get("transcript_path", "")))
+    except NothingToMeasureYet:
+        return ""                   # a fresh session sits far below the compaction point; the alarm stays unused
     except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
         if state.get("unmeasured"):
             return ""
         state["unmeasured"] = True
         return f"{MARKER}: could not measure context use ({type(error).__name__}: {error}). Checkpoint reminders are off until it can be measured again — write the handoff by hand before a long step."
+    state.pop("unmeasured", None)   # measured again: the next failure is reported again
     if used < point - MARGIN:
         state["band"] = -1          # below the threshold again, e.g. after a compaction
         return ""

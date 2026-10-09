@@ -124,3 +124,9 @@ READY FOR DRY RUN: no — 6 blocking items
 - `python3 sdlc/checks/check_structure.py` → 364 checks, PASS (89 files).
 - B11 applied: ADR-0007 option B now gives a range (about 2–2.5 times an Opus review) and labels it a guess for the dry run to measure.
 - The main session re-read the decisive facts on the official pages itself on 2026-10-08: the quote "start with Claude Opus 5.5 for most workloads", the four model IDs and prices (https://platform.claude.com/docs/en/models/overview), the advisor pairing table, the silent drop of a refused pairing and the uncached advisor read (https://code.claude.com/docs/en/advisor), and the model precedence `/model` > `--model` > `ANTHROPIC_MODEL` > settings (https://code.claude.com/docs/en/model-config).
+
+## Status after the owner's decisions (main session, later on 2026-10-08)
+The assessment above is kept as written. Since then:
+- **The owner cancelled the engine dry run.** The dry-run rule is gone from CLAUDE.md, PROCESS.md and `sdlc-harness`. C1–C8 stay open and are answered during the first real phases instead.
+- A1–A6 are done (PR #7); B4 is done (PR #8). B1 (this repo's rules win over user-level rules), B2 (`rm` / `git rm` ask first), B5 (the drill copy includes untracked, non-ignored files), B9 (state files refreshed) and B10 (`AGENT_MODELS` already has Haiku) are done on branch `engine/owner-decisions`. B11 was already applied (above).
+- B3 → ADR-0008 (proposed): the option is the owner's to pick, because the sandbox also limits writes and network. B6 and B8: the owner wants to agree the exact change first. B7 (`/doctor prompt-audit`) has not been run.
