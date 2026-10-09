@@ -55,6 +55,18 @@ Subagent (დამხმარე აგენტი) ცალკე Claude-�
 - [`verifier.md`](../.claude/agents/verifier.md) — Sonnet 5.5, საშუალო effort. სუფთა კონტექსტში უშვებს გეგმის შემოწმების ბრძანებებს და თითოეულზე წერს MATCH / MISMATCH / COULD-NOT-RUN; „VERIFIED" მხოლოდ მაშინ, როცა ყველაფერი დაემთხვა.
 - [`scout.md`](../.claude/agents/scout.md) — Haiku 5.5, საშუალო effort, მხოლოდ კითხვა და ვებში ძიება, ბრძანებების გაშვების გარეშე ([ADR-0007](decisions/0007-claude-only-orchestration.md), ვარიანტი A). სწრაფად პოულობს ფაქტებს: ბიბლიოთეკის ვერსიას, ფასს, დოკუმენტაციის გვერდს, სად წერია რამე რეპოში, გრძელი გვერდის შეჯამებას. ყოველ ფაქტს წყაროს და შემოწმების თარიღს უწერს. არ წყვეტს და არ ასწორებს; მის პასუხს გადაწყვეტილებამდე უფრო ძლიერი მოდელი ამოწმებს. Claude Code ≥ 2.1.293 სჭირდება.
 
+## `apps/qa-chapter/` — QA Chapter workspace (ძრავის გვერდითი app)
+
+> ძრავა უცვლელი რჩება. ეს საქაღალდე collaborator-ის (QA Chapter) workspace-ია: app → platform დამოკიდებულება. root `docs/sdlc-state.md` = მხოლოდ ძრავა; აქაური `sdlc-state.md` = მხოლოდ QA. დეტალი: [`apps/qa-chapter/README.md`](../apps/qa-chapter/README.md).
+
+- [`README.md`](../apps/qa-chapter/README.md) — რა არის workspace, საზღვრები ძრავასთან, სტრუქტურა და შემდეგი ნაბიჯი.
+- [`docs/principles.md`](../apps/qa-chapter/docs/principles.md) — ხარისხის მოდელი: რისკის სიგნალი, კონტრაქტი, ადამიანის კარიბჭეები, სწავლა ინციდენტიდან (draft).
+- [`docs/intent.md`](../apps/qa-chapter/docs/intent.md) — ამ workspace-ის ჩანაფიქრი (draft; root `docs/intent.md` არ არის).
+- [`docs/sdlc-state.md`](../apps/qa-chapter/docs/sdlc-state.md) — მხოლოდ QA workspace-ის ფაზები.
+- [`tasks/todo.md`](../apps/qa-chapter/tasks/todo.md) — ამ workspace-ის დავალებები.
+- [`memory/now.md`](../apps/qa-chapter/memory/now.md) — QA workspace-ის მოკლე მდგომარეობა.
+- [`knowledge/README.md`](../apps/qa-chapter/knowledge/README.md) — ცოდნის საქაღალდის წესები (რისკები/ინციდენტები მოგვიანებით).
+
 ## `docs/` — ოფიციალური ჩანაწერები
 
 - [`sdlc-state.md`](sdlc-state.md) — ფაზების „ტაბლო": 0–9 ეტაპები სტატუსით, შედეგით და დამმტკიცებლით, ქვემოთ — კარიბჭეების ჟურნალი. Claude მას ყოველი ეტაპის წინ კითხულობს; „approved" მხოლოდ მფლობელის სიტყვის შემდეგ იწერება.
@@ -135,7 +147,7 @@ Subagent (დამხმარე აგენტი) ცალკე Claude-�
 
 ## რა არ არის რეპოში
 
-- **ჯერ არ შექმნილა:** `docs/intent.md` / `spec.md` / `plan.md` (თავ-თავის ეტაპზე), პროდუქტის კოდი (Phase 6).
+- **ჯერ არ შექმნილა:** root `docs/intent.md` / `spec.md` / `plan.md` (თავ-თავის ეტაპზე; QA-ის draft intent არის `apps/qa-chapter/docs/intent.md`-ში), პროდუქტის კოდი (Phase 6).
 - **განზრახ არ არის git-ში** (`.gitignore`): `.claude/settings.local.json`, `.claude/handoff-*.md`, `.omc/`, `.obsidian/workspace*.json`, საიდუმლოებები. ეს ფაილები შეიძლება შენს კომპიუტერზე გამოჩნდეს, მაგრამ პირადია.
 - **დამალული `.git/`** — git-ის ისტორიის ბაზა; მას ხელით არ ვეხებით.
 

@@ -8,6 +8,7 @@
 - **Branch:** `main` (`566fd00`, PR #8); `engine/owner-decisions` — მფლობელის 2026-10-08-ის გადაწყვეტილებები და ძრავის გასწორებები · **GitHub:** `tornikebolokadze1-cyber/Asterbit` — **public** (2026-10-08-ს, ამ სესიის გარეთ გახდა საჯარო; დილით private იყო). gitleaks-მა მთელი ისტორია შეამოწმა (`--all`, 34 commit): „no leaks found" · **გუნდი:** მფლობელი + თანამშრომელი lashavamleti (წერის უფლება, მოწვევა მიღებულია)
 - **Decisions:** ADR-0004 accepted; ADR-0001…0003 და ADR-0005…0008 proposed
 - **Owner's decisions (2026-10-08):** ახლა მხოლოდ ძრავის სრულყოფაა საჭირო; ძრავის საცდელი გაშვება არ ტარდება — Phase 0-ის კარიბჭე auditor-ის შემოწმებითა და მფლობელის დამტკიცებით დაიხურება; Codex იშლება, CodeRabbit-ს მფლობელი მოგვიანებით განიხილავს
+- **QA workspace (არ არის root პროდუქტი):** branch `qa/chapter-workspace` — `apps/qa-chapter/` scaffold (draft principles + intent); root `docs/intent.md` ჯერ არ არსებობს
 - **Not built yet:** Phase 0-ის კარიბჭე; პროდუქტის იდეა არ არის არჩეული
 
 ## Completed (დასრულებული)
@@ -126,10 +127,20 @@
 - მფლობელის მოთხოვნით ორი თემა ძველი ჩანაწერებიდანაც ამოვიდა — ეს ერთადერთი გამონაკლისია წესიდან „ძველი ჩანაწერი არ იცვლება". git-ის ისტორიაში ძველი ტექსტი რჩება, რადგან ატვირთული ისტორიის გადაწერა აკრძალულია
 - გლობალური ნაბიჯები (რეპოს გარეთ): MemPalace-ის hook გაითიშა (ჯერ სარეზერვო ასლი), Codex-ის plugin და marketplace წაიშალა, `/codex*` ბრძანებები სარეზერვო საქაღალდეში გადავიდა. auto-mode-ის ფილტრმა ლოკალური `main`-ის განახლება (`git pull`) დაბლოკა, ამიტომ `~/Asterbit`-ში ახალი hook-ები `git pull`-ის შემდეგ ჩაირთვება
 
+### 2026-10-09 — QA Chapter workspace scaffold (branch `qa/chapter-workspace`)
+- თანამშრომელმა (lashavamleti, QA Chapter Lead) აირჩია განთავსების ვარიანტი B: `apps/qa-chapter/` ძრავის გვერდით; ძრავა (`sdlc-*`, hooks, root intent) უცვლელი
+- შექმნილია: README (საზღვრები apps→platform), `docs/principles.md`, draft `docs/intent.md`, ლოკალური `docs/sdlc-state.md`, `tasks/todo.md`, `memory/now.md`, `knowledge/README.md`
+- განახლდა `docs/FILES.md` (ყველა ახალი ფაილი ჩამოთვლილია)
+- ეს **არ არის** root Phase 1 პროდუქტი; promote მხოლოდ მფლობელის ADR-ით მოგვიანებით
+- ბაზა გადაწყდა `main`-დან `engine/owner-decisions`-ზე (ყველაზე ახალი ძრავის ბრენჩი)
+
 ## In Progress (მიმდინარე)
 - `engine/owner-decisions`: PR ელოდება CI-ს და მფლობელის გაერთიანებას
+- `qa/chapter-workspace`: QA Chapter scaffold — PR მფლობელისკენ
 
 ## Next Steps (შემდეგი ნაბიჯები)
 1. მფლობელი: `engine/owner-decisions`-ის PR-ის გაერთიანება; PR #9-ზე გადაწყვეტილება (რეკომენდაცია — დახურვა)
-2. მფლობელი: `/sdlc-wrap`-ის ლოგიკისა (B8) და მეხსიერების ცრუ განგაშის გასწორების (B6) შეთანხმება; ADR-0008-ის ვარიანტის არჩევა
-3. Phase 0-ის კარიბჭე: auditor მთელ ძრავაზე → ADR-0001…0003, ADR-0005…0008 და PROCESS.md-ის დამტკიცება; მერე, როცა მფლობელი იდეას აირჩევს — `/sdlc-intent`
+2. მფლობელი: `qa/chapter-workspace` PR-ის განხილვა/გაერთიანება (ძრავა უცვლელი; მხოლოდ `apps/qa-chapter/` + FILES/PROGRESS)
+3. მფლობელი: `/sdlc-wrap`-ის ლოგიკისა (B8) და მეხსიერების ცრუ განგაშის გასწორების (B6) შეთანხმება; ADR-0008-ის ვარიანტის არჩევა
+4. Chapter Lead: intent-ის ღია კითხვები და principles-ის დამტკიცება; მერე SOP/ინსტრუმენტების შედარება
+5. Phase 0-ის კარიბჭე: auditor მთელ ძრავაზე → ADR-0001…0003, ADR-0005…0008 და PROCESS.md-ის დამტკიცება; მერე, როცა მფლობელი იდეას აირჩევს — `/sdlc-intent`
